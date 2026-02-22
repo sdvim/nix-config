@@ -1,0 +1,26 @@
+# Font
+font-family = BerkeleyMono Nerd Font
+
+# Start in fullscreen
+fullscreen = true
+
+# Pure black background with a dark theme base
+theme = Builtin Tango Dark
+background = 000000
+
+# Hide tab bar entirely
+window-show-tab-bar = never
+
+# Unbind all tab-related shortcuts
+keybind = super+t=unbind
+keybind = super+shift+left_bracket=unbind
+keybind = super+shift+right_bracket=unbind
+keybind = super+one=unbind
+keybind = super+two=unbind
+keybind = super+three=unbind
+keybind = super+four=unbind
+keybind = super+five=unbind
+keybind = super+six=unbind
+keybind = super+seven=unbind
+keybind = super+eight=unbind
+keybind = super+nine=unbind
