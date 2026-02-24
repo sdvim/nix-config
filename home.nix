@@ -1,15 +1,11 @@
-{ pkgs, ... }: {
+{ config, pkgs, ... }: {
   home.username = "stevedv";
   home.homeDirectory = "/Users/stevedv";
   home.stateVersion = "25.11";
 
   programs.home-manager.enable = true;
 
-  # ──────────────────────────────────────────────
-  # Packages (replaces `brew install` for CLI tools)
-  # ──────────────────────────────────────────────
   home.packages = with pkgs; [
-    # Modern CLI replacements
     bat
     eza
     fd
@@ -17,37 +13,60 @@
     fzf
     jq
     tealdeer
-
-    # Shell tools
-    zoxide
-    starship
+    neovim
+    fnm
+    lazygit
+    lua5_1
+    luarocks
+    bun
+    sesh
     tmux
-
-    # Development
+    tmuxPlugins.resurrect
+    tmuxPlugins.continuum
     gh
     gnupg
     git-crypt
     codex
     bitwarden-cli
-
-    neovim
-    fnm
+    vhs
 
     # TODO: uncomment after uninstalling brew claude-code
-    # Then run: nix flake update claude-code && sudo darwin-rebuild switch --flake ~/nix-config#air
-    # claude-code  # via inputs.claude-code flake
+    # claude-code
   ];
 
-  # ──────────────────────────────────────────────
-  # Shell aliases
-  # ──────────────────────────────────────────────
-  home.shellAliases = {
-    rebuild = "sudo darwin-rebuild switch --flake ~/nix-config#air";
+  home.sessionVariables = {
+    EDITOR = "nvim";
+    VISUAL = "nvim";
   };
 
-  # ──────────────────────────────────────────────
-  # Git (migrated from .gitconfig)
-  # ──────────────────────────────────────────────
+  home.sessionPath = [
+    "$HOME/.local/bin"
+    "/Applications/Obsidian.app/Contents/MacOS"
+  ];
+
+  home.shellAliases = {
+    rebuild = "sudo darwin-rebuild switch --flake ~/nix-config#air && source ~/.zshrc && tmux source-file ~/.tmux.conf 2>/dev/null; true";
+
+    g = "git";
+    ga = "git add .";
+    gb = "git branch";
+    gc = "git commit";
+    gca = "git commit --amend";
+    gco = "git checkout";
+    gcom = "git checkout main";
+    gf = "git fetch --prune";
+    gl = "git log --pretty=format:'%C(yellow)%h%C(reset)%C(red)%d%C(reset)%n%C(cyan)%ar%C(reset) %C(green)<%an>%C(reset)%n%s%n' --no-merges --max-count 5";
+    gp = "git pull";
+    gpush = "git push";
+    gr = "git rebase";
+    grom = "git rebase origin/main";
+    gs = "git status -s";
+    undo = "git reset HEAD~1";
+    wip = "git add . && git commit -m 'WIP'";
+
+    c = "claude --dangerously-skip-permissions";
+  };
+
   programs.git = {
     enable = true;
     signing = {
@@ -65,57 +84,268 @@
     };
   };
 
-  # ──────────────────────────────────────────────
-  # Starship prompt (migrated from .config/starship.toml)
-  # ──────────────────────────────────────────────
-  # Note: Your setup uses two configs (unicode vs ASCII for Terminus).
-  # Home Manager manages the default one. The ASCII fallback can stay
-  # as a raw file or be handled via shell logic.
+  home.file.".local/bin/tmux-cmd" = {
+    executable = true;
+    text = ''
+      #!/bin/bash
+      # Usage: tmux-cmd <label> <command...>
+      # Example: tmux-cmd "rebuilding" sudo darwin-rebuild switch --flake ~/nix-config#air
+      label="$1"; shift
+      STATEFILE="/tmp/tmux-cmd-state"
+
+      # Spinner loop in background
+      spinner_frames=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
+      (
+        while true; do
+          for f in "''${spinner_frames[@]}"; do
+            printf "%s %s" "$label" "$f" > "$STATEFILE"
+            tmux refresh-client -S
+            sleep 0.3
+          done
+        done
+      ) &
+      spinner_pid=$!
+
+      # Run the actual command, capture output
+      output_file=$(mktemp /tmp/tmux-cmd-XXXXXX)
+      if "$@" >"$output_file" 2>&1; then
+        kill $spinner_pid 2>/dev/null
+        ok_label="''${label%ing}"
+        printf "#[fg=green]%s OK#[default]" "$ok_label" > "$STATEFILE"
+      else
+        kill $spinner_pid 2>/dev/null
+        ok_label="''${label%ing}"
+        printf "#[fg=red]%s FAILED#[default] #[dim]prefix+R#[default]" "$ok_label" > "$STATEFILE"
+        ln -sf "$output_file" /tmp/tmux-cmd-last-error
+      fi
+      tmux refresh-client -S
+
+      sleep 5
+      : > "$STATEFILE"
+      tmux refresh-client -S
+    '';
+  };
+
+  home.file.".local/bin/sesh-picker" = {
+    executable = true;
+    text = ''
+      #!/bin/bash
+      # Spotlight-style omnipicker: commands, sessions, projects, files
+      # Sections are prefixed with icons for visual grouping
+
+      {
+        # Commands
+        echo "$ rebuild"
+        echo "$ push"
+        # Tmux sessions
+        sesh list | while read -r s; do echo "◆ $s"; done
+        # Projects (zoxide top 10)
+        zoxide query -l 2>/dev/null | head -10 | while read -r d; do echo "◇ ''${d/#$HOME/\~}"; done
+        # Files (cwd, top 20)
+        fd --type f --max-depth 4 --exclude .git -c never 2>/dev/null | head -20 | while read -r f; do echo "… $f"; done
+      } | fzf --height 100% --no-sort --ansi \
+          --bind "ctrl-c:abort,f12:abort" | {
+        read -r choice
+        # Strip the icon prefix
+        type="''${choice%% *}"
+        value="''${choice#* }"
+        case "$type" in
+          '$')
+            case "$value" in
+              rebuild) tmux run-shell -b "$HOME/.local/bin/tmux-cmd rebuilding sudo darwin-rebuild switch --flake ~/nix-config#air" ;;
+              push)    tmux run-shell -b "$HOME/.local/bin/tmux-cmd pushing git push" ;;
+            esac
+            ;;
+          ◆) [[ -n "$value" ]] && sesh connect "$value" ;;
+          ◇)
+            # Expand ~ back to $HOME and connect via sesh
+            dir="''${value/#\~/$HOME}"
+            sesh connect "$dir"
+            ;;
+          …) [[ -n "$value" ]] && tmux new-window "''${EDITOR:-nvim} '$value'" ;;
+        esac
+      }
+    '';
+  };
+
+  home.file.".config/ghostty/config".source = ./config/ghostty/config;
+  home.file.".config/nvim".source =
+    config.lib.file.mkOutOfStoreSymlink "/Users/stevedv/nix-config/config/nvim";
+
+  home.file.".tmux.conf".text = ''
+    # Fix PATH for Nix (so run-shell plugins can find tmux, bash, etc.)
+    set-environment -g PATH "/etc/profiles/per-user/stevedv/bin:/run/current-system/sw/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+
+    # Status bar: black background, at the top
+    set -g status-position top
+    set -g status-style 'bg=black'
+    set -g status-left ' '
+    set -g status-right '#(cat /tmp/tmux-cmd-state 2>/dev/null) '
+    set -g status-right-length 80
+
+    # Mouse support (scrollback, pane selection)
+    set -g mouse on
+
+    # Windows start at 1
+    set -g base-index 1
+    set -g pane-base-index 1
+    set -g renumber-windows on
+
+    # Use command name for window titles, ignore program-set titles
+    set -g automatic-rename on
+    set -g allow-rename off
+
+    # Hide pane borders
+    set -g pane-border-style 'fg=black'
+    set -g pane-active-border-style 'fg=black'
+
+    # Dim inactive panes (muted text + raised background)
+    set -g window-style 'fg=#555555,bg=#111111'
+    set -g window-active-style 'fg=#ffffff,bg=#000000'
+
+    # Extended keys so shift+enter etc. pass through to apps
+    set -s extended-keys on
+    set -s extended-keys-format csi-u
+    set -as terminal-features ',xterm-ghostty:RGB:extkeys'
+
+    # Forward shift+enter to apps (CSI u format for Claude Code)
+    bind-key -n S-Enter send-keys Escape "[13;2u"
+
+    # Spotlight picker (ctrl+' to toggle)
+    # Ghostty intercepts ctrl+' and sends F12. In root table, F12 opens popup.
+    # Inside popup, F12 passes through to fzf which aborts on it (--bind f12:abort).
+    bind-key -n F12 display-popup -E -w 60% -h 60% "$HOME/.local/bin/sesh-picker"
+    # Fallback: direct ctrl+' for opening (works without Ghostty keybind)
+    bind-key -n C-\' display-popup -E -w 60% -h 60% "$HOME/.local/bin/sesh-picker"
+
+    # Clear old bindings from previous config
+    unbind-key r
+
+    # View last tmux-cmd error log
+    bind-key R new-window -n "error" "less -R /tmp/tmux-cmd-last-error"
+
+    # Increase scrollback
+    set -g history-limit 50000
+
+    # Session persistence (resurrect + continuum)
+    run-shell ${pkgs.tmuxPlugins.resurrect}/share/tmux-plugins/resurrect/resurrect.tmux
+    run-shell ${pkgs.tmuxPlugins.continuum}/share/tmux-plugins/continuum/continuum.tmux
+    set -g @resurrect-capture-pane-contents 'on'
+    set -g @continuum-restore 'on'
+    set -g @continuum-save-interval '10'
+  '';
+
+  home.file.".claude/statusline.sh" = {
+    executable = true;
+    text = ''
+      #!/bin/bash
+      input=$(cat)
+
+      export CLAUDE_MODEL=$(echo "$input" | jq -r '.model.display_name // "?"')
+      export CLAUDE_CONTEXT=$(printf '%s%%' "$(echo "$input" | jq -r '.context_window.used_percentage // 0' | cut -d. -f1)")
+
+      session_name=$(echo "$input" | jq -r '.session_name // empty')
+      [[ -n "$session_name" ]] && export CLAUDE_SESSION="$session_name"
+
+      STARSHIP_SHELL= starship prompt
+    '';
+  };
+
+  # Runtime overrides go in ~/.claude/settings.local.json
+  home.file.".claude/settings.json".text = builtins.toJSON {
+    skipDangerousModePermissionPrompt = true;
+    statusLine = {
+      type = "command";
+      command = "~/.claude/statusline.sh";
+    };
+  };
+
+  programs.zsh = {
+    enable = true;
+    initContent = ''
+      # Shadow standard tools with modern alternatives — guard from agents
+      if [[ -z "$CLAUDECODE" && -z "$CODEX_SANDBOX" ]]; then
+        alias cat="bat"
+        alias find="fd"
+        alias grep="rg"
+        alias ls="eza --icons=always -a"
+        alias tree="eza -T -L 4 -a --git-ignore --color=always"
+      fi
+
+      gd() { git status -s && echo && git diff "$@"; }
+
+      eval "$(fnm env --use-on-cd)"
+      if ! fnm list 2>/dev/null | grep -q default; then
+        fnm install --lts
+        fnm default lts-latest
+      fi
+      if ! command -v tree-sitter &>/dev/null; then
+        npm install -g tree-sitter-cli
+      fi
+    '';
+  };
+
   programs.starship = {
     enable = true;
     enableZshIntegration = true;
     settings = {
-      add_newline = true;
-      git_status = {
-        ahead = "⇡\${count}";
-        behind = "⇣\${count}";
-        diverged = "⇡\${ahead_count}⇣\${behind_count}";
+      format = "$directory$git_branch$git_status\${env_var.CLAUDE_MODEL}\${env_var.CLAUDE_CONTEXT}\${env_var.CLAUDE_SESSION}$character";
+      right_format = "$cmd_duration";
+
+      character = {
+        success_symbol = "[›](green)";
+        error_symbol = "[›](red)";
       };
-      gcloud.disabled = true;
+
+      directory = {
+        truncation_length = 3;
+        truncate_to_repo = true;
+        style = "blue";
+      };
+
+      git_branch = {
+        format = "[$branch]($style) ";
+        style = "purple";
+      };
+
+      git_status = {
+        format = "([$all_status$ahead_behind]($style) )";
+        style = "yellow";
+      };
+
+      cmd_duration = {
+        min_time = 2000;
+        format = "[$duration]($style)";
+        style = "dimmed white";
+      };
+
+      env_var = {
+        CLAUDE_MODEL = {
+          variable = "CLAUDE_MODEL";
+          format = "[\\[$env_value\\]]($style) ";
+          style = "bold cyan";
+        };
+
+        CLAUDE_CONTEXT = {
+          variable = "CLAUDE_CONTEXT";
+          format = "[$env_value]($style) ";
+          style = "yellow";
+        };
+
+        CLAUDE_SESSION = {
+          variable = "CLAUDE_SESSION";
+          format = "[$env_value]($style)";
+          style = "purple";
+        };
+      };
     };
   };
 
-  # ──────────────────────────────────────────────
-  # Tmux (migrated from .tmux.conf)
-  # ──────────────────────────────────────────────
-  programs.tmux = {
+  programs.zoxide = {
     enable = true;
-    mouse = true;
-    historyLimit = 50000;
-    terminal = "tmux-256color";
-    extraConfig = ''
-      set -g status off
-      set -ga terminal-overrides ",xterm*:Tc"
-    '';
+    enableZshIntegration = true;
   };
 
-  # ──────────────────────────────────────────────
-  # Raw config files (no native HM module)
-  # Uncomment as you migrate each one.
-  # ──────────────────────────────────────────────
-
-  home.file.".config/ghostty/config".source = ./config/ghostty/config;
-
-  # Claude Code — baseline settings (read-only via Nix store symlink)
-  # Runtime overrides go in ~/.claude/settings.local.json (unmanaged)
-  home.file.".claude/settings.json".text = builtins.toJSON {
-    skipDangerousModePermissionPrompt = true;
-  };
-  # home.file.".config/aerospace/aerospace.toml".source = ./config/aerospace/aerospace.toml;
-
-  # ──────────────────────────────────────────────
-  # GitHub CLI
-  # ──────────────────────────────────────────────
   programs.gh = {
     enable = true;
     settings = {
