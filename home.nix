@@ -126,25 +126,34 @@
     '';
   };
 
+  home.file.".local/bin/sesh-picker-list" = {
+    executable = true;
+    text = ''
+      #!/bin/bash
+      # Generate spotlight picker entries
+      echo "$ rebuild"
+      echo "$ push"
+      sesh list | while read -r s; do echo "◆ $s"; done
+      zoxide query -l 2>/dev/null | head -10 | while read -r d; do echo "◇ ''${d/#$HOME/\~}"; done
+      fd --type f --max-depth 4 --exclude .git -c never 2>/dev/null | head -20 | while read -r f; do echo "… $f"; done
+    '';
+  };
+
   home.file.".local/bin/sesh-picker" = {
     executable = true;
     text = ''
       #!/bin/bash
-      # Spotlight-style omnipicker: commands, sessions, projects, files
-      # Sections are prefixed with icons for visual grouping
+      CACHE="/tmp/sesh-picker-cache"
 
-      {
-        # Commands
-        echo "$ rebuild"
-        echo "$ push"
-        # Tmux sessions
-        sesh list | while read -r s; do echo "◆ $s"; done
-        # Projects (zoxide top 10)
-        zoxide query -l 2>/dev/null | head -10 | while read -r d; do echo "◇ ''${d/#$HOME/\~}"; done
-        # Files (cwd, top 20)
-        fd --type f --max-depth 4 --exclude .git -c never 2>/dev/null | head -20 | while read -r f; do echo "… $f"; done
-      } | fzf --height 100% --no-sort --ansi \
-          --bind "ctrl-c:abort,f12:abort" | {
+      # Serve cache if fresh (<30s), refresh in background
+      if [[ -f "$CACHE" ]] && (( $(date +%s) - $(stat -f %m "$CACHE") < 30 )); then
+        cat "$CACHE"
+      else
+        "$HOME/.local/bin/sesh-picker-list" | tee "$CACHE"
+      fi | fzf --height 100% --no-sort --ansi \
+          --history "$HOME/.sesh_picker_history" \
+          --bind "ctrl-c:abort,f12:abort" \
+          --bind "ctrl-r:reload($HOME/.local/bin/sesh-picker-list)" | {
         read -r choice
         # Strip the icon prefix
         type="''${choice%% *}"
