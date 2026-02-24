@@ -1,5 +1,5 @@
 # Font
-font-family = BerkeleyMono Nerd Font
+font-family = JetBrainsMono Nerd Font
 
 # Start in fullscreen
 fullscreen = true
@@ -11,16 +11,53 @@ background = 000000
 # Hide tab bar entirely
 window-show-tab-bar = never
 
-# Unbind all tab-related shortcuts
-keybind = super+t=unbind
-keybind = super+shift+left_bracket=unbind
-keybind = super+shift+right_bracket=unbind
-keybind = super+one=unbind
-keybind = super+two=unbind
-keybind = super+three=unbind
-keybind = super+four=unbind
-keybind = super+five=unbind
-keybind = super+six=unbind
-keybind = super+seven=unbind
-keybind = super+eight=unbind
-keybind = super+nine=unbind
+# Hide titlebar, keep native fullscreen
+macos-titlebar-style = hidden
+window-padding-y = 0
+
+# Skip quit confirmation (tmux preserves sessions)
+confirm-close-surface = false
+
+# Clear Ghostty default keybinds (goto_tab conflicts with tmux bindings)
+keybind = clear
+
+# Re-add essentials
+keybind = super+c=copy_to_clipboard
+keybind = super+v=paste_from_clipboard
+keybind = super+shift+comma=open_config
+keybind = super+q=quit
+
+# Tmux windows (replaces Ghostty tabs)
+keybind = super+t=text:\x02c
+keybind = super+0=text:\x020
+keybind = super+1=text:\x021
+keybind = super+2=text:\x022
+keybind = super+3=text:\x023
+keybind = super+4=text:\x024
+keybind = super+5=text:\x025
+keybind = super+6=text:\x026
+keybind = super+7=text:\x027
+keybind = super+8=text:\x028
+keybind = super+9=text:\x029
+keybind = super+w=text:\x02x
+keybind = super+shift+bracket_left=text:\x02p
+keybind = super+shift+bracket_right=text:\x02n
+keybind = ctrl+tab=text:\x02n
+keybind = ctrl+shift+tab=text:\x02p
+
+# Tmux panes (replaces Ghostty splits)
+keybind = super+d=text:\x02%
+keybind = super+shift+d=text:\x02\x22
+keybind = super+bracket_left=text:\x02;
+keybind = super+bracket_right=text:\x02o
+keybind = super+shift+enter=text:\x02z
+
+# Shift+enter sends CSI 13;2u (kitty protocol) for apps like Claude Code
+keybind = shift+enter=text:\x1b[13;2u
+
+# Spotlight picker toggle — send F12 escape sequence so tmux can match it
+# in both root and popup key tables (ctrl+' CSI-u encoding breaks popup table)
+keybind = ctrl+apostrophe=text:\x1b[24~
+
+# Launch into tmux
+command = /etc/profiles/per-user/stevedv/bin/tmux new-session -A -s main
