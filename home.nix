@@ -14,7 +14,11 @@
     jq
     tealdeer
     neovim
-    fnm
+    nodejs_24
+    yarn
+    turbo
+    eas-cli
+    tree-sitter
     lazygit
     lua5_1
     luarocks
@@ -26,9 +30,11 @@
     gh
     gnupg
     git-crypt
-    codex
+    # codex installed via homebrew cask
     bitwarden-cli
     vhs
+
+    kanata
 
     # TODO: uncomment after uninstalling brew claude-code
     # claude-code
@@ -65,6 +71,7 @@
     wip = "git add . && git commit -m 'WIP'";
 
     c = "claude --dangerously-skip-permissions";
+    cx = "codex --full-auto";
   };
 
   programs.git = {
@@ -79,7 +86,6 @@
       user.email = "s.dellavalentina@gmail.com";
       pull.rebase = true;
       core.editor = "nvim";
-      core.hooksPath = "~/nix-config/git-hooks";
       init.defaultBranch = "main";
     };
   };
@@ -92,13 +98,22 @@
       # Example: tmux-cmd "rebuilding" sudo darwin-rebuild switch --flake ~/nix-config#air
       label="$1"; shift
       STATEFILE="/tmp/tmux-cmd-state"
+      LOGFILE=$(mktemp /tmp/tmux-cmd-XXXXXX)
+      ln -sf "$LOGFILE" /tmp/tmux-cmd-live
 
-      # Spinner loop in background
+      start_time=$(date +%s)
+
+      # Spinner loop in background — after 10s, append hotkey hint
       spinner_frames=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
       (
         while true; do
+          elapsed=$(( $(date +%s) - start_time ))
+          hint=""
+          if (( elapsed >= 10 )); then
+            hint=" #[dim]prefix+W#[default]"
+          fi
           for f in "''${spinner_frames[@]}"; do
-            printf "%s %s" "$label" "$f" > "$STATEFILE"
+            printf "%s %s%s" "$label" "$f" "$hint" > "$STATEFILE"
             tmux refresh-client -S
             sleep 0.3
           done
@@ -107,8 +122,7 @@
       spinner_pid=$!
 
       # Run the actual command, capture output
-      output_file=$(mktemp /tmp/tmux-cmd-XXXXXX)
-      if "$@" >"$output_file" 2>&1; then
+      if "$@" >"$LOGFILE" 2>&1; then
         kill $spinner_pid 2>/dev/null
         ok_label="''${label%ing}"
         printf "#[fg=green]%s OK#[default]" "$ok_label" > "$STATEFILE"
@@ -116,7 +130,7 @@
         kill $spinner_pid 2>/dev/null
         ok_label="''${label%ing}"
         printf "#[fg=red]%s FAILED#[default] #[dim]prefix+R#[default]" "$ok_label" > "$STATEFILE"
-        ln -sf "$output_file" /tmp/tmux-cmd-last-error
+        ln -sf "$LOGFILE" /tmp/tmux-cmd-last-error
       fi
       tmux refresh-client -S
 
@@ -134,7 +148,6 @@
       echo "$ rebuild"
       echo "$ push"
       sesh list | while read -r s; do echo "◆ $s"; done
-      zoxide query -l 2>/dev/null | head -10 | while read -r d; do echo "◇ ''${d/#$HOME/\~}"; done
       fd --type f --max-depth 4 --exclude .git -c never 2>/dev/null | head -20 | while read -r f; do echo "… $f"; done
     '';
   };
@@ -145,38 +158,48 @@
       #!/bin/bash
       CACHE="/tmp/sesh-picker-cache"
 
-      # Serve cache if fresh (<30s), refresh in background
-      if [[ -f "$CACHE" ]] && (( $(date +%s) - $(stat -f %m "$CACHE") < 30 )); then
-        cat "$CACHE"
+      # Serve cache if fresh (<10m), refresh with ctrl+r
+      if [[ -f "$CACHE" ]] && (( $(date +%s) - $(stat -f %m "$CACHE") < 600 )); then
+        list=$(cat "$CACHE")
       else
-        "$HOME/.local/bin/sesh-picker-list" | tee "$CACHE"
-      fi | fzf --height 100% --no-sort --ansi \
+        list=$("$HOME/.local/bin/sesh-picker-list")
+        echo "$list" > "$CACHE"
+      fi
+
+      choice=$(echo "$list" | fzf --height 100% --no-sort --ansi \
           --history "$HOME/.sesh_picker_history" \
           --bind "ctrl-c:abort,f12:abort" \
-          --bind "ctrl-r:reload($HOME/.local/bin/sesh-picker-list)" | {
-        read -r choice
-        # Strip the icon prefix
-        type="''${choice%% *}"
-        value="''${choice#* }"
-        case "$type" in
-          '$')
-            case "$value" in
-              rebuild) tmux run-shell -b "$HOME/.local/bin/tmux-cmd rebuilding sudo darwin-rebuild switch --flake ~/nix-config#air" ;;
-              push)    tmux run-shell -b "$HOME/.local/bin/tmux-cmd pushing git push" ;;
-            esac
-            ;;
-          ◆) [[ -n "$value" ]] && sesh connect "$value" ;;
-          ◇)
-            # Expand ~ back to $HOME and connect via sesh
-            dir="''${value/#\~/$HOME}"
-            sesh connect "$dir"
-            ;;
-          …) [[ -n "$value" ]] && tmux new-window "''${EDITOR:-nvim} '$value'" ;;
-        esac
-      }
+          --bind "ctrl-r:reload($HOME/.local/bin/sesh-picker-list)")
+
+      [[ -z "$choice" ]] && exit 0
+
+      type="''${choice%% *}"
+      value="''${choice#* }"
+
+      case "$type" in
+        '$')
+          case "$value" in
+            rebuild) tmux run-shell -b "$HOME/.local/bin/tmux-cmd rebuilding sudo darwin-rebuild switch --flake ~/nix-config#air" ;;
+            push)    tmux run-shell -b "$HOME/.local/bin/tmux-cmd pushing git push" ;;
+          esac
+          ;;
+        ◆)
+          dir="''${value/#\~/$HOME}"
+          name=$(basename "$dir")
+          # Switch to existing session, or create one in the directory
+          if tmux has-session -t "=$name" 2>/dev/null; then
+            tmux switch-client -t "=$name"
+          else
+            tmux new-session -d -s "$name" -c "$dir"
+            tmux switch-client -t "=$name"
+          fi
+          ;;
+        …) tmux new-window -c '#{pane_current_path}' "''${EDITOR:-nvim} '$value'" ;;
+      esac
     '';
   };
 
+  home.file.".config/kanata/kanata.kbd".source = ./config/kanata/kanata.kbd;
   home.file.".config/ghostty/config".source = ./config/ghostty/config;
   home.file.".config/nvim".source =
     config.lib.file.mkOutOfStoreSymlink "/Users/stevedv/nix-config/config/nvim";
@@ -192,6 +215,9 @@
     set -g status-right '#(cat /tmp/tmux-cmd-state 2>/dev/null) '
     set -g status-right-length 80
 
+    # Vi keys in copy mode (hjkl, /, v, etc.)
+    set -g mode-keys vi
+
     # Mouse support (scrollback, pane selection)
     set -g mouse on
 
@@ -200,9 +226,16 @@
     set -g pane-base-index 1
     set -g renumber-windows on
 
-    # Use command name for window titles, ignore program-set titles
+    # Window titles: dir:process
+    # Known dirs get short aliases, otherwise show basename
+    # Claude Code overwrites its process title with a version — detect and fix
     set -g automatic-rename on
     set -g allow-rename off
+    set -g set-titles off
+    set -g window-status-format '#I:#{?#{m:*/nix-config,#{pane_current_path}},nix,#{?#{m:*/courtyard-frontend*,#{pane_current_path}},cyfe,#{b:pane_current_path}}}:#{?#{m:[0-9]*,#{pane_current_command}},✱,#{?#{m:codex*,#{pane_current_command}},¢,#{pane_current_command}}}'
+    set -g window-status-current-format '#I:#{?#{m:*/nix-config,#{pane_current_path}},nix,#{?#{m:*/courtyard-frontend*,#{pane_current_path}},cyfe,#{b:pane_current_path}}}:#{?#{m:[0-9]*,#{pane_current_command}},✱,#{?#{m:codex*,#{pane_current_command}},¢,#{pane_current_command}}}'
+    set -g window-status-current-style 'bold'
+    set -g window-status-style 'dim'
 
     # Hide pane borders
     set -g pane-border-style 'fg=black'
@@ -217,6 +250,17 @@
     set -s extended-keys-format csi-u
     set -as terminal-features ',xterm-ghostty:RGB:extkeys'
 
+    # Splits and new windows inherit current directory
+    bind-key % split-window -h -c '#{pane_current_path}'
+    bind-key '"' split-window -v -c '#{pane_current_path}'
+    bind-key c new-window -c '#{pane_current_path}'
+
+    # Clear scrollback buffer (cmd+k via Ghostty)
+    bind-key K send-keys C-l \; clear-history
+
+    # New session (cmd+n via Ghostty)
+    bind-key N new-session -c '#{pane_current_path}'
+
     # Forward shift+enter to apps (CSI u format for Claude Code)
     bind-key -n S-Enter send-keys Escape "[13;2u"
 
@@ -229,6 +273,9 @@
 
     # Clear old bindings from previous config
     unbind-key r
+
+    # View live tmux-cmd output (shown as hint after 10s)
+    bind-key W new-window -n "task" "tail -f /tmp/tmux-cmd-live"
 
     # View last tmux-cmd error log
     bind-key R new-window -n "error" "less -R /tmp/tmux-cmd-last-error"
@@ -265,7 +312,7 @@
     skipDangerousModePermissionPrompt = true;
     statusLine = {
       type = "command";
-      command = "~/.claude/statusline.sh";
+      command = "/Users/stevedv/.claude/statusline.sh";
     };
   };
 
@@ -282,15 +329,6 @@
       fi
 
       gd() { git status -s && echo && git diff "$@"; }
-
-      eval "$(fnm env --use-on-cd)"
-      if ! fnm list 2>/dev/null | grep -q default; then
-        fnm install --lts
-        fnm default lts-latest
-      fi
-      if ! command -v tree-sitter &>/dev/null; then
-        npm install -g tree-sitter-cli
-      fi
     '';
   };
 
@@ -320,6 +358,9 @@
       git_status = {
         format = "([$all_status$ahead_behind]($style) )";
         style = "yellow";
+        ahead = "⇡\${count}";
+        behind = "⇣\${count}";
+        diverged = "⇡\${ahead_count}⇣\${behind_count}";
       };
 
       cmd_duration = {
