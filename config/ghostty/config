@@ -24,8 +24,11 @@ keybind = clear
 # Re-add essentials
 keybind = super+c=copy_to_clipboard
 keybind = super+v=paste_from_clipboard
-keybind = super+shift+comma=open_config
+keybind = super+shift+comma=text:\x02\x3a new-window -n config "nvim ~/nix-config/config/ghostty/config"\x0d
 keybind = super+q=quit
+keybind = super+k=text:\x02K
+keybind = super+n=text:\x02N
+keybind = super+grave_accent=text:\x02n
 
 # Tmux windows (replaces Ghostty tabs)
 keybind = super+t=text:\x02c
@@ -58,6 +61,13 @@ keybind = shift+enter=text:\x1b[13;2u
 # Spotlight picker toggle — send F12 escape sequence so tmux can match it
 # in both root and popup key tables (ctrl+' CSI-u encoding breaks popup table)
 keybind = ctrl+apostrophe=text:\x1b[24~
+
+# Quick terminal (shift+ctrl+' from anywhere)
+keybind = global:shift+ctrl+apostrophe=toggle_quick_terminal
+quick-terminal-position = center
+quick-terminal-size = 80%
+quick-terminal-autohide = true
+quick-terminal-animation-duration = 0
 
 # Launch into tmux
 command = /etc/profiles/per-user/stevedv/bin/tmux new-session -A -s main
