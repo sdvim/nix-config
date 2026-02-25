@@ -4,7 +4,7 @@
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
   networking.hostName = "air";
-  networking.computerName = "air";
+  networking.computerName = "Steve's Macbook";
   networking.localHostName = "air";
 
   system.primaryUser = "stevedv";
@@ -106,13 +106,37 @@
       "ghostty"
       "bitwarden"
       "helium-browser"
-      "claude-island"
+      "codex"
+      # "karabiner-elements"  # requires interactive sudo for pkg install
     ];
     onActivation.cleanup = "zap";
   };
 
+  launchd.daemons.kanata = {
+    serviceConfig = {
+      Label = "org.kanata.daemon";
+      ProgramArguments = [
+        "/etc/profiles/per-user/stevedv/bin/kanata"
+        "-c"
+        "/Users/stevedv/.config/kanata/kanata.kbd"
+      ];
+      RunAtLoad = true;
+      KeepAlive = true;
+      StandardOutPath = "/Library/Logs/Kanata/kanata.out.log";
+      StandardErrorPath = "/Library/Logs/Kanata/kanata.err.log";
+    };
+  };
+
   system.activationScripts.postActivation.text = ''
+    mkdir -p /Library/Logs/Kanata
+
     osascript -e 'tell application "System Events" to tell every desktop to set picture to POSIX file "/System/Library/Desktop Pictures/Solid Colors/Black.png"'
+
+    # Exclude ~/Git from Spotlight indexing
+    if ! mdutil -s /Users/stevedv/Git 2>/dev/null | grep -q "Indexing disabled"; then
+      touch /Users/stevedv/Git/.metadata_never_index
+      mdutil -i off /Users/stevedv/Git 2>/dev/null || true
+    fi
   '';
 
   security.sudo.extraConfig = ''

@@ -1,0 +1,49 @@
+;; Colemak-DH with home row mods (GACS order)
+;; Caps Lock toggles between Colemak-DH and QWERTY
+
+(defcfg
+  process-unmapped-keys yes
+)
+
+;; Physical QWERTY positions
+(defsrc
+  f12
+  q    w    e    r    t    y    u    i    o    p
+  a    s    d    f    g    h    j    k    l    ;
+  z    x    c    v    b    n    m    ,    .    /
+)
+
+;; Colemak-DH with home row mods
+(deflayer colemak-dh
+  @qwr
+  q    w    f    p    b    j    l    u    y    ;
+  @a   @r   @s   @t   g    m    @n   @e   @i   @o
+  z    x    c    d    v    k    h    ,    .    /
+)
+
+;; Plain QWERTY (no home row mods)
+(deflayer qwerty
+  @cdh
+  q    w    e    r    t    y    u    i    o    p
+  a    s    d    f    g    h    j    k    l    ;
+  z    x    c    v    b    n    m    ,    .    /
+)
+
+;; Layer toggles
+(defalias
+  cdh (layer-switch colemak-dh)
+  qwr (layer-switch qwerty)
+)
+
+;; Home row mods: tap = letter, hold = modifier
+;; Pinky=Cmd, Ring=Opt, Middle=Ctrl, Index=Shift
+(defalias
+  a (tap-hold 200 280 a lmet)
+  r (tap-hold 200 280 r lalt)
+  s (tap-hold 200 280 s lctl)
+  t (tap-hold 200 280 t lsft)
+  n (tap-hold 200 280 n rsft)
+  e (tap-hold 200 280 e rctl)
+  i (tap-hold 200 280 i ralt)
+  o (tap-hold 200 280 o rmet)
+)
