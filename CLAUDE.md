@@ -30,6 +30,10 @@ To check encryption status:
 git-crypt status
 ```
 
+## Important: All changes go through Nix
+
+Everything in this repo is declarative. Never edit dotfiles or config files directly in `~` — always make changes in the Nix source files (`home.nix`, `darwin.nix`, `config/`, etc.) and rebuild. After any change, run the rebuild command above. New files under `config/` must be `git add`ed before rebuilding (flakes only see tracked files).
+
 ## Documentation
 
 - nix-darwin options: https://daiderd.com/nix-darwin/manual/index.html
