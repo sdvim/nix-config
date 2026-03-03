@@ -120,6 +120,20 @@
     onActivation.cleanup = "zap";
   };
 
+  launchd.agents.home-manager-activate = {
+    serviceConfig = {
+      Label = "org.nix-community.home-manager.activate";
+      ProgramArguments = [
+        "/bin/sh"
+        "-c"
+        "/bin/wait4path /nix/store && /Users/stevedv/.local/state/home-manager/gcroots/current-home/activate --driver-version 1"
+      ];
+      RunAtLoad = true;
+      StandardOutPath = "/tmp/home-manager-activate.log";
+      StandardErrorPath = "/tmp/home-manager-activate.log";
+    };
+  };
+
   launchd.daemons.kanata = {
     serviceConfig = {
       Label = "org.kanata.daemon";
