@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "Running pre-push checks..."
+
+echo ":: nix fmt --check"
+nix fmt -- --check .
+
+echo ":: statix check"
+statix check .
+
+echo ":: deadnix"
+deadnix --fail .
+
+echo "All checks passed."

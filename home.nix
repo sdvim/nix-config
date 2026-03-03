@@ -1,4 +1,7 @@
-{ config, pkgs, ... }: {
+{ config, pkgs, ... }:
+{
+  imports = [ ./claude.nix ];
+
   home.username = "stevedv";
   home.homeDirectory = "/Users/stevedv";
   home.stateVersion = "25.11";
@@ -15,6 +18,7 @@
     tealdeer
     neovim
     nodejs_24
+    pnpm
     yarn
     turbo
     eas-cli
@@ -32,20 +36,20 @@
     git-crypt
     # codex installed via homebrew cask
     bitwarden-cli
+    _1password-cli
     vhs
 
     kanata
-
-    # TODO: uncomment after uninstalling brew claude-code
-    # claude-code
   ];
 
   home.sessionVariables = {
     EDITOR = "nvim";
     VISUAL = "nvim";
+    NPM_CONFIG_PREFIX = "$HOME/.npm-global";
   };
 
   home.sessionPath = [
+    "$HOME/.npm-global/bin"
     "$HOME/.local/bin"
     "/Applications/Obsidian.app/Contents/MacOS"
   ];
@@ -71,7 +75,7 @@
     wip = "git add . && git commit -m 'WIP'";
 
     c = "claude --dangerously-skip-permissions";
-    cx = "codex --full-auto";
+    cx = "codex --dangerously-bypass-approvals-and-sandbox";
   };
 
   programs.git = {
@@ -101,21 +105,14 @@
       LOGFILE=$(mktemp /tmp/tmux-cmd-XXXXXX)
       ln -sf "$LOGFILE" /tmp/tmux-cmd-live
 
-      start_time=$(date +%s)
-
-      # Spinner loop in background — after 10s, append hotkey hint
+      # Spinner loop in background — show hotkey hint before label
       spinner_frames=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
       (
         while true; do
-          elapsed=$(( $(date +%s) - start_time ))
-          hint=""
-          if (( elapsed >= 10 )); then
-            hint=" #[dim]prefix+W#[default]"
-          fi
           for f in "''${spinner_frames[@]}"; do
-            printf "%s %s%s" "$label" "$f" "$hint" > "$STATEFILE"
+            printf "#[dim][^b w]#[default] %s %s" "$label" "$f" > "$STATEFILE"
             tmux refresh-client -S
-            sleep 0.3
+            sleep 0.12
           done
         done
       ) &
@@ -129,7 +126,7 @@
       else
         kill $spinner_pid 2>/dev/null
         ok_label="''${label%ing}"
-        printf "#[fg=red]%s FAILED#[default] #[dim]prefix+R#[default]" "$ok_label" > "$STATEFILE"
+        printf "#[dim][^b R]#[default] #[fg=red]%s FAILED#[default]" "$ok_label" > "$STATEFILE"
         ln -sf "$LOGFILE" /tmp/tmux-cmd-last-error
       fi
       tmux refresh-client -S
@@ -137,6 +134,54 @@
       sleep 5
       : > "$STATEFILE"
       tmux refresh-client -S
+    '';
+  };
+
+  home.file.".local/bin/tmux-detach-window" = {
+    executable = true;
+    text = ''
+      #!/bin/bash
+      set -euo pipefail
+
+      current_session="$(tmux display-message -p '#{session_name}')"
+      current_window="$(tmux display-message -p '#{window_id}')"
+      window_count="$(tmux display-message -p '#{session_windows}')"
+
+      # Don't detach the last window — would destroy the session
+      if [ "$window_count" -le 1 ]; then
+        tmux display-message "Cannot detach: only one window in session"
+        exit 0
+      fi
+
+      # Find next available session name: main-2, main-3, ...
+      n=2
+      while tmux has-session -t "''${current_session}-''${n}" 2>/dev/null; do
+        n=$((n + 1))
+      done
+      new_session="''${current_session}-''${n}"
+
+      # Create detached session (comes with a throwaway window)
+      tmux new-session -d -s "$new_session"
+
+      # Move current window to the new session
+      tmux move-window -s "$current_window" -t "''${new_session}:"
+
+      # Kill the throwaway window
+      for wid in $(tmux list-windows -t "$new_session" -F '#{window_id}'); do
+        if [ "$wid" != "$current_window" ]; then
+          tmux kill-window -t "$wid"
+        fi
+      done
+
+      # Renumber windows in both sessions
+      tmux move-window -r -t "$new_session"
+      tmux move-window -r -t "$current_session"
+
+      # Launch new Ghostty window attached to the new session
+      open -n -a Ghostty.app --args \
+        --quit-after-last-window-closed \
+        --fullscreen=true \
+        -e /etc/profiles/per-user/stevedv/bin/tmux attach-session -t "$new_session"
     '';
   };
 
@@ -199,6 +244,20 @@
     '';
   };
 
+  home.activation.installGitHooks = config.lib.dag.entryAfter [ "writeBoundary" ] ''
+    hooks_dir="$HOME/nix-config/.git/hooks"
+    hook_src="$HOME/nix-config/hooks/pre-push"
+    hook_dst="$hooks_dir/pre-push"
+    if [ -d "$hooks_dir" ] && [ ! "$hook_dst" -ef "$hook_src" ]; then
+      ln -sf "$hook_src" "$hook_dst"
+    fi
+  '';
+
+  home.file.".config/tealdeer/config.toml".text = ''
+    [updates]
+    auto_update = true
+  '';
+
   home.file.".config/kanata/kanata.kbd".source = ./config/kanata/kanata.kbd;
   home.file.".config/ghostty/config".source = ./config/ghostty/config;
   home.file.".config/nvim".source =
@@ -229,13 +288,15 @@
     # Window titles: dir:process
     # Known dirs get short aliases, otherwise show basename
     # Claude Code overwrites its process title with a version — detect and fix
+    # When Claude/Codex is awaiting input, hooks set @claude_waiting on the pane → shows orange !!
     set -g automatic-rename on
     set -g allow-rename off
     set -g set-titles off
-    set -g window-status-format '#I:#{?#{m:*/nix-config,#{pane_current_path}},nix,#{?#{m:*/courtyard-frontend*,#{pane_current_path}},cyfe,#{b:pane_current_path}}}:#{?#{m:[0-9]*,#{pane_current_command}},✱,#{?#{m:codex*,#{pane_current_command}},¢,#{pane_current_command}}}'
+    set -g window-status-format '#{?#{@claude_waiting},#[fg=colour208],}#I:#{?#{m:*/nix-config,#{pane_current_path}},nix,#{?#{m:*/courtyard-frontend*,#{pane_current_path}},cyfe,#{b:pane_current_path}}}:#{?#{m:[0-9]*,#{pane_current_command}},✱,#{?#{m:codex*,#{pane_current_command}},¢,#{pane_current_command}}}#{?#{@claude_waiting},!!#[default],}'
     set -g window-status-current-format '#I:#{?#{m:*/nix-config,#{pane_current_path}},nix,#{?#{m:*/courtyard-frontend*,#{pane_current_path}},cyfe,#{b:pane_current_path}}}:#{?#{m:[0-9]*,#{pane_current_command}},✱,#{?#{m:codex*,#{pane_current_command}},¢,#{pane_current_command}}}'
     set -g window-status-current-style 'bold'
     set -g window-status-style 'dim'
+    set-hook -g pane-focus-in 'set-option -p -u @claude_waiting; refresh-client -S'
 
     # Hide pane borders
     set -g pane-border-style 'fg=black'
@@ -258,8 +319,8 @@
     # Clear scrollback buffer (cmd+k via Ghostty)
     bind-key K send-keys C-l \; clear-history
 
-    # New session (cmd+n via Ghostty)
-    bind-key N new-session -c '#{pane_current_path}'
+    # Detach window to new Ghostty window (cmd+n via Ghostty)
+    bind-key N run-shell "$HOME/.local/bin/tmux-detach-window"
 
     # Forward shift+enter to apps (CSI u format for Claude Code)
     bind-key -n S-Enter send-keys Escape "[13;2u"
@@ -291,31 +352,6 @@
     set -g @continuum-save-interval '10'
   '';
 
-  home.file.".claude/statusline.sh" = {
-    executable = true;
-    text = ''
-      #!/bin/bash
-      input=$(cat)
-
-      export CLAUDE_MODEL=$(echo "$input" | jq -r '.model.display_name // "?"')
-      export CLAUDE_CONTEXT=$(printf '%s%%' "$(echo "$input" | jq -r '.context_window.used_percentage // 0' | cut -d. -f1)")
-
-      session_name=$(echo "$input" | jq -r '.session_name // empty')
-      [[ -n "$session_name" ]] && export CLAUDE_SESSION="$session_name"
-
-      STARSHIP_SHELL= starship prompt
-    '';
-  };
-
-  # Runtime overrides go in ~/.claude/settings.local.json
-  home.file.".claude/settings.json".text = builtins.toJSON {
-    skipDangerousModePermissionPrompt = true;
-    statusLine = {
-      type = "command";
-      command = "/Users/stevedv/.claude/statusline.sh";
-    };
-  };
-
   programs.zsh = {
     enable = true;
     initContent = ''
@@ -329,6 +365,36 @@
       fi
 
       gd() { git status -s && echo && git diff "$@"; }
+
+      z() {
+        __zoxide_doctor
+        if [[ "$#" -eq 0 ]]; then
+          __zoxide_cd ~
+        elif [[ "$#" -eq 1 ]] && { [[ -d "$1" ]] || [[ "$1" = '-' ]] || [[ "$1" =~ ^[-+][0-9]+$ ]]; }; then
+          __zoxide_cd "$1"
+        elif [[ "$#" -eq 2 ]] && [[ "$1" = "--" ]]; then
+          __zoxide_cd "$2"
+        else
+          local current result
+          current="$(__zoxide_pwd)"
+          result="$(command zoxide query --exclude "$current" -- "$@" 2>/dev/null)" && {
+            __zoxide_cd "$result"
+            return
+          }
+
+          # No-op success when already in zoxide's only match.
+          result="$(command zoxide query -- "$@" 2>/dev/null)" && {
+            if [[ "$result" == "$current" ]]; then
+              return 0
+            fi
+            __zoxide_cd "$result"
+            return $?
+          }
+
+          command zoxide query --exclude "$current" -- "$@" >/dev/null
+          return $?
+        fi
+      }
     '';
   };
 

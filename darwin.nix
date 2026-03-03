@@ -1,7 +1,12 @@
-{ pkgs, ... }: {
+{ pkgs, ... }:
+{
 
   nixpkgs.config.allowUnfree = true;
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.settings.experimental-features = [
+    "nix-command"
+    "flakes"
+  ];
+  nix.settings.warn-dirty = false;
 
   networking.hostName = "air";
   networking.computerName = "Steve's Macbook";
@@ -14,7 +19,7 @@
   };
 
   fonts.packages = [
-    (pkgs.runCommand "berkeley-mono-nerd-font" {} ''
+    (pkgs.runCommand "berkeley-mono-nerd-font" { } ''
       mkdir -p $out/share/fonts/truetype
       cp ${./fonts}/*.ttf $out/share/fonts/truetype/
     '')
@@ -50,7 +55,9 @@
 
     CustomUserPreferences = {
       NSGlobalDomain = {
-        AppleFirstWeekday = { gregorian = 2; };
+        AppleFirstWeekday = {
+          gregorian = 2;
+        };
       };
     };
 
@@ -60,8 +67,8 @@
       show-recents = false;
       tilesize = 48;
       minimize-to-application = true;
-      persistent-apps = [];
-      persistent-others = [];
+      persistent-apps = [ ];
+      persistent-others = [ ];
       autohide-delay = 10.0;
       wvous-br-corner = 1;
     };
@@ -107,6 +114,7 @@
       "bitwarden"
       "helium-browser"
       "codex"
+      "visual-studio-code"
       # "karabiner-elements"  # requires interactive sudo for pkg install
     ];
     onActivation.cleanup = "zap";
@@ -130,13 +138,18 @@
   system.activationScripts.postActivation.text = ''
     mkdir -p /Library/Logs/Kanata
 
-    osascript -e 'tell application "System Events" to tell every desktop to set picture to POSIX file "/System/Library/Desktop Pictures/Solid Colors/Black.png"'
+    # osascript -e 'tell application "System Events" to tell every desktop to set picture to POSIX file "/System/Library/Desktop Pictures/Solid Colors/Black.png"'
 
     # Exclude ~/Git from Spotlight indexing
-    if ! mdutil -s /Users/stevedv/Git 2>/dev/null | grep -q "Indexing disabled"; then
+    if ! mdutil -s /Users/stevedv/Git 2>&1 | grep -q "Indexing disabled"; then
       touch /Users/stevedv/Git/.metadata_never_index
-      mdutil -i off /Users/stevedv/Git 2>/dev/null || true
+      mdutil -i off /Users/stevedv/Git &>/dev/null || true
     fi
+
+    # Global npm packages (not available in nixpkgs)
+    mkdir -p /Users/stevedv/.npm-global
+    NPM_CONFIG_PREFIX=/Users/stevedv/.npm-global npm i -g @steipete/summarize 2>/dev/null || true
+    chown -R stevedv:staff /Users/stevedv/.npm-global
   '';
 
   security.sudo.extraConfig = ''
