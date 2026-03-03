@@ -1,5 +1,4 @@
-{ pkgs, ... }:
-{
+_: {
   home.packages = [
     # TODO: uncomment after uninstalling brew claude-code
     # pkgs.claude-code

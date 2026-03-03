@@ -3,13 +3,13 @@ set -euo pipefail
 
 echo "Running pre-push checks..."
 
-echo ":: nix fmt --check"
-nix fmt -- --check .
+echo ":: nix fmt --ci"
+nix fmt -- --ci
 
 echo ":: statix check"
-statix check .
+nix develop -c statix check .
 
 echo ":: deadnix"
-deadnix --fail .
+nix develop -c deadnix --fail .
 
 echo "All checks passed."
