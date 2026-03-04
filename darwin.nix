@@ -27,6 +27,7 @@
   ];
 
   programs.zsh.enable = true;
+  programs.zsh.enableGlobalCompInit = false;
 
   system.keyboard = {
     enableKeyMapping = true;

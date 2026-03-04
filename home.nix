@@ -13,7 +13,7 @@
     eza
     fd
     ripgrep
-    fzf
+    # fzf installed via programs.fzf below
     jq
     tealdeer
     neovim
@@ -63,7 +63,7 @@
     gc = "git commit";
     gca = "git commit --amend";
     gco = "git checkout";
-    gcom = "git checkout main";
+    gcom = "git checkout main --ignore-other-worktrees";
     gf = "git fetch --prune";
     gl = "git log --pretty=format:'%C(yellow)%h%C(reset)%C(red)%d%C(reset)%n%C(cyan)%ar%C(reset) %C(green)<%an>%C(reset)%n%s%n' --no-merges --max-count 5";
     gp = "git pull";
@@ -92,6 +92,31 @@
       core.editor = "nvim";
       init.defaultBranch = "main";
     };
+  };
+
+  home.file.".local/bin/tmux-fmt-dir" = {
+    executable = true;
+    text = ''
+      #!/bin/bash
+      case "$1" in
+        */nix-config)          echo "nix" ;;
+        */courtyard-frontend*) echo "cyfe" ;;
+        /Users/stevedv)        echo "~" ;;
+        *)                     basename "$1" ;;
+      esac
+    '';
+  };
+
+  home.file.".local/bin/tmux-fmt-cmd" = {
+    executable = true;
+    text = ''
+      #!/bin/bash
+      case "$1" in
+        [0-9]*)  echo "✱" ;;
+        codex*)  echo "¢" ;;
+        *)       echo "$1" ;;
+      esac
+    '';
   };
 
   home.file.".local/bin/tmux-cmd" = {
@@ -292,8 +317,8 @@
     set -g automatic-rename on
     set -g allow-rename off
     set -g set-titles off
-    set -g window-status-format '#{?#{@claude_waiting},#[fg=colour208],}#I:#{?#{m:*/nix-config,#{pane_current_path}},nix,#{?#{m:*/courtyard-frontend*,#{pane_current_path}},cyfe,#{b:pane_current_path}}}:#{?#{m:[0-9]*,#{pane_current_command}},✱,#{?#{m:codex*,#{pane_current_command}},¢,#{pane_current_command}}}#{?#{@claude_waiting},!!#[default],}'
-    set -g window-status-current-format '#I:#{?#{m:*/nix-config,#{pane_current_path}},nix,#{?#{m:*/courtyard-frontend*,#{pane_current_path}},cyfe,#{b:pane_current_path}}}:#{?#{m:[0-9]*,#{pane_current_command}},✱,#{?#{m:codex*,#{pane_current_command}},¢,#{pane_current_command}}}'
+    set -g window-status-format '#{?#{@claude_waiting},#[fg=colour208],}#I:#(~/.local/bin/tmux-fmt-dir #{pane_current_path}):#(~/.local/bin/tmux-fmt-cmd #{pane_current_command})#{?#{@claude_waiting},!!#[default],}'
+    set -g window-status-current-format '#I:#(~/.local/bin/tmux-fmt-dir #{pane_current_path}):#(~/.local/bin/tmux-fmt-cmd #{pane_current_command})'
     set -g window-status-current-style 'bold'
     set -g window-status-style 'dim'
     set-hook -g pane-focus-in 'set-option -p -u @claude_waiting; refresh-client -S'
@@ -354,7 +379,23 @@
 
   programs.zsh = {
     enable = true;
+    autosuggestion.enable = true;
+    syntaxHighlighting.enable = true;
+    enableCompletion = true;
+    completionInit = "autoload -U compinit && compinit -C";
     initContent = ''
+      # Menu-style tab completion (navigate with arrows)
+      zstyle ':completion:*' menu select
+      zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
+
+      # Word navigation (Alt+arrows)
+      bindkey '\e[1;3D' backward-word
+      bindkey '\e[1;3C' forward-word
+
+      # Rebind fzf cd widget from Alt+C to Ctrl+F
+      bindkey -r '\ec'
+      bindkey '^F' fzf-cd-widget
+
       # Shadow standard tools with modern alternatives — guard from agents
       if [[ -z "$CLAUDECODE" && -z "$CODEX_SANDBOX" ]]; then
         alias cat="bat"
@@ -455,6 +496,14 @@
         };
       };
     };
+  };
+
+  programs.fzf = {
+    enable = true;
+    enableZshIntegration = true;
+    defaultOptions = [ "--height=40%" "--reverse" ];
+    # Ctrl+F: use fd, skip caches and macOS cruft
+    changeDirWidgetCommand = "fd --type d --exclude node_modules --exclude .next --exclude Library";
   };
 
   programs.zoxide = {
