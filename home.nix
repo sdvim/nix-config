@@ -501,7 +501,10 @@
   programs.fzf = {
     enable = true;
     enableZshIntegration = true;
-    defaultOptions = [ "--height=40%" "--reverse" ];
+    defaultOptions = [
+      "--height=40%"
+      "--reverse"
+    ];
     # Ctrl+F: use fd, skip caches and macOS cruft
     changeDirWidgetCommand = "fd --type d --exclude node_modules --exclude .next --exclude Library";
   };
