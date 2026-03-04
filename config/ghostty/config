@@ -24,6 +24,10 @@ keybind = clear
 # Re-add essentials
 keybind = super+c=copy_to_clipboard
 keybind = super+v=paste_from_clipboard
+keybind = super+left=text:\x01
+keybind = super+right=text:\x05
+keybind = alt+left=text:\x1b[1;3D
+keybind = alt+right=text:\x1b[1;3C
 keybind = super+shift+comma=text:\x02\x3a new-window -n config "nvim ~/nix-config/config/ghostty/config"\x0d
 keybind = super+q=quit
 keybind = super+k=text:\x02K
@@ -60,10 +64,10 @@ keybind = shift+enter=text:\x1b[13;2u
 
 # Spotlight picker toggle — send F12 escape sequence so tmux can match it
 # in both root and popup key tables (ctrl+' CSI-u encoding breaks popup table)
-keybind = ctrl+apostrophe=text:\x1b[24~
+keybind = ctrl+apostrophe=toggle_quick_terminal
 
-# Quick terminal (shift+ctrl+' from anywhere)
-keybind = global:shift+ctrl+apostrophe=toggle_quick_terminal
+# Spotlight picker toggle — send F12 escape sequence so tmux can match it
+keybind = shift+ctrl+apostrophe=text:\x1b[24~
 quick-terminal-position = center
 quick-terminal-size = 80%
 quick-terminal-autohide = true
