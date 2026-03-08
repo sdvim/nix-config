@@ -11,8 +11,9 @@ background = 000000
 # Hide tab bar entirely
 window-show-tab-bar = never
 
-# Hide titlebar, keep native fullscreen
+# Hide titlebar and window decorations
 macos-titlebar-style = hidden
+window-decoration = none
 window-padding-y = 0
 
 # Skip quit confirmation (tmux preserves sessions)
@@ -64,7 +65,7 @@ keybind = shift+enter=text:\x1b[13;2u
 
 # Spotlight picker toggle — send F12 escape sequence so tmux can match it
 # in both root and popup key tables (ctrl+' CSI-u encoding breaks popup table)
-keybind = ctrl+apostrophe=toggle_quick_terminal
+keybind = global:ctrl+apostrophe=toggle_quick_terminal
 
 # Spotlight picker toggle — send F12 escape sequence so tmux can match it
 keybind = shift+ctrl+apostrophe=text:\x1b[24~
