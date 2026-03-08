@@ -22,6 +22,8 @@
     yarn
     turbo
     eas-cli
+    biome
+    ast-grep
     tree-sitter
     lazygit
     lua5_1
