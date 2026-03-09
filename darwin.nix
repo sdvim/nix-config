@@ -110,13 +110,13 @@
   homebrew = {
     enable = true;
     casks = [
-      "obsidian"
-      "ghostty"
-      "bitwarden"
-      "helium-browser"
-      "codex"
-      "zed"
       "android-studio"
+      "bitwarden"
+      "codex"
+      "ghostty"
+      "helium-browser"
+      "obsidian"
+      "zed"
       # "karabiner-elements"  # requires interactive sudo for pkg install
     ];
     onActivation.cleanup = "zap";

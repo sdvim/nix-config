@@ -9,39 +9,38 @@
   programs.home-manager.enable = true;
 
   home.packages = with pkgs; [
+    _1password-cli
+    ast-grep
     bat
+    biome
+    bitwarden-cli
+    bun
+    eas-cli
     eza
     fd
-    ripgrep
     # fzf installed via programs.fzf below
+    gh
+    git-crypt
+    gnupg
     jq
-    tealdeer
-    neovim
-    nodejs_24
-    pnpm
-    yarn
-    turbo
-    eas-cli
-    biome
-    ast-grep
-    tree-sitter
+    kanata
     lazygit
     lua5_1
     luarocks
-    bun
+    neovim
+    nodejs_24
+    pnpm
+    ripgrep
     sesh
+    tealdeer
     tmux
-    tmuxPlugins.resurrect
     tmuxPlugins.continuum
-    gh
-    gnupg
-    git-crypt
-    # codex installed via homebrew cask
-    bitwarden-cli
-    _1password-cli
+    tmuxPlugins.resurrect
+    tree-sitter
+    turbo
     vhs
-
-    kanata
+    yarn
+    # codex installed via homebrew cask
   ];
 
   home.sessionVariables = {
