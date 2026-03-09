@@ -116,6 +116,7 @@
       case "$1" in
         [0-9]*)  echo "✱" ;;
         codex*)  echo "¢" ;;
+        gemini*) echo "✦" ;;
         *)       echo "$1" ;;
       esac
     '';
@@ -280,6 +281,8 @@
     fi
   '';
 
+  home.file.".hushlogin".text = "";
+
   home.file.".config/tealdeer/config.toml".text = ''
     [updates]
     auto_update = true
@@ -324,6 +327,8 @@
     set -g window-status-current-style 'bold'
     set -g window-status-style 'dim'
     set-hook -g pane-focus-in 'set-option -p -u @claude_waiting; refresh-client -S'
+    set-hook -g window-pane-changed 'set-option -p -u @claude_waiting; refresh-client -S'
+    set-hook -g session-window-changed 'set-option -p -u @claude_waiting; refresh-client -S'
 
     # Hide pane borders
     set -g pane-border-style 'fg=black'

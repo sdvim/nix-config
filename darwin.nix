@@ -115,7 +115,8 @@
       "bitwarden"
       "helium-browser"
       "codex"
-      "visual-studio-code"
+      "zed"
+      "android-studio"
       # "karabiner-elements"  # requires interactive sudo for pkg install
     ];
     onActivation.cleanup = "zap";
