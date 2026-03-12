@@ -306,8 +306,9 @@
     # Vi keys in copy mode (hjkl, /, v, etc.)
     set -g mode-keys vi
 
-    # Mouse support (scrollback, pane selection)
+    # Mouse support (scrollback, pane selection, select-to-copy)
     set -g mouse on
+    bind-key -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "pbcopy"
 
     # Windows start at 1
     set -g base-index 1
