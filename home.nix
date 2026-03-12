@@ -15,6 +15,8 @@
     biome
     bitwarden-cli
     bun
+    colima
+    docker-client
     eas-cli
     eza
     fd
@@ -74,6 +76,9 @@
     gs = "git status -s";
     undo = "git reset HEAD~1";
     wip = "git add . && git commit -m 'WIP'";
+
+    docker-start = "colima start";
+    docker-stop = "colima stop";
 
     c = "claude --dangerously-skip-permissions";
     cx = "codex --dangerously-bypass-approvals-and-sandbox";
