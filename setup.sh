@@ -73,7 +73,7 @@ if command -v nix &>/dev/null; then
   info "Nix is already installed."
 else
   if ask "Install Nix?"; then
-    curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
+    sh <(curl -L https://nixos.org/nix/install)
     # Source nix-daemon so nix is available in this shell
     if [[ -e /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]]; then
       . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
