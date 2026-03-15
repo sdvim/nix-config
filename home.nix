@@ -58,7 +58,7 @@
   ];
 
   home.shellAliases = {
-    rebuild = "sudo darwin-rebuild switch --flake ~/nix-config#air && source ~/.zshrc && tmux source-file ~/.tmux.conf 2>/dev/null; true";
+    rebuild = "sudo darwin-rebuild switch --flake ~/nix-config#$(hostname -s) && source ~/.zshrc && tmux source-file ~/.tmux.conf 2>/dev/null; true";
 
     g = "git";
     ga = "git add .";
@@ -131,7 +131,7 @@
     text = ''
       #!/bin/bash
       # Usage: tmux-cmd <label> <command...>
-      # Example: tmux-cmd "rebuilding" sudo darwin-rebuild switch --flake ~/nix-config#air
+      # Example: tmux-cmd "rebuilding" sudo darwin-rebuild switch --flake ~/nix-config#$(hostname -s)
       label="$1"; shift
       STATEFILE="/tmp/tmux-cmd-state"
       LOGFILE=$(mktemp /tmp/tmux-cmd-XXXXXX)
@@ -256,7 +256,7 @@
       case "$type" in
         '$')
           case "$value" in
-            rebuild) tmux run-shell -b "$HOME/.local/bin/tmux-cmd rebuilding sudo darwin-rebuild switch --flake ~/nix-config#air" ;;
+            rebuild) tmux run-shell -b "$HOME/.local/bin/tmux-cmd rebuilding sudo darwin-rebuild switch --flake ~/nix-config#$(hostname -s)" ;;
             push)    tmux run-shell -b "$HOME/.local/bin/tmux-cmd pushing git push" ;;
           esac
           ;;

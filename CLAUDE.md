@@ -5,12 +5,13 @@ nix-darwin + Home Manager configuration for macOS (Apple Silicon).
 ## Build
 
 ```bash
-sudo darwin-rebuild switch --flake ~/nix-config#air
+sudo darwin-rebuild switch --flake ~/nix-config#<hostname>
+# e.g. #air or #mini
 ```
 
 ## Architecture
 
-- `flake.nix` — Flake inputs (nixpkgs-unstable, nix-darwin, home-manager) and the single `air` output
+- `flake.nix` — Flake inputs and `mkHost` helper that defines per-host configs (`air`, `mini`)
 - `darwin.nix` — System-level config: macOS defaults, keyboard, dock, finder, homebrew casks, fonts
 - `home.nix` — User-level config: packages, git, starship, tmux, ghostty, gh
 - `config/` — Raw config files managed via `home.file` (e.g. ghostty)

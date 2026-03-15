@@ -8,10 +8,6 @@
   ];
   nix.settings.warn-dirty = false;
 
-  networking.hostName = "air";
-  networking.computerName = "Steve's Macbook";
-  networking.localHostName = "air";
-
   system.primaryUser = "stevedv";
   users.users.stevedv = {
     name = "stevedv";

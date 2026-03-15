@@ -32,6 +32,28 @@
       system = "aarch64-darwin";
       pkgs = nixpkgs.legacyPackages.${system};
     in
+    let
+      mkHost =
+        { hostName, computerName }:
+        nix-darwin.lib.darwinSystem {
+          modules = [
+            { nixpkgs.hostPlatform = system; }
+            ./darwin.nix
+            {
+              networking.hostName = hostName;
+              networking.computerName = computerName;
+              networking.localHostName = hostName;
+            }
+            home-manager.darwinModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.backupFileExtension = "before-nix-darwin";
+              home-manager.users.stevedv = import ./home.nix;
+            }
+          ];
+        };
+    in
     {
       formatter.${system} = pkgs.nixfmt-tree;
 
@@ -43,18 +65,14 @@
         ];
       };
 
-      darwinConfigurations."air" = nix-darwin.lib.darwinSystem {
-        modules = [
-          { nixpkgs.hostPlatform = system; }
-          ./darwin.nix
-          home-manager.darwinModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.backupFileExtension = "before-nix-darwin";
-            home-manager.users.stevedv = import ./home.nix;
-          }
-        ];
+      darwinConfigurations."air" = mkHost {
+        hostName = "air";
+        computerName = "Steve's Macbook";
+      };
+
+      darwinConfigurations."mini" = mkHost {
+        hostName = "mini";
+        computerName = "Steve's Mac Mini";
       };
     };
 }

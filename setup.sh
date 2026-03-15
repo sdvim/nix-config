@@ -1,8 +1,48 @@
 #!/bin/bash
 set -e
 
+# ──────────────────────────────────────────────
+# If running via curl|bash, clone the repo first
+# ──────────────────────────────────────────────
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+if [[ ! -f "$SCRIPT_DIR/flake.nix" ]]; then
+  FLAKE_DIR="$HOME/nix-config"
+  if [[ ! -d "$FLAKE_DIR" ]]; then
+    echo "Cloning nix-config to $FLAKE_DIR..."
+    if command -v git &>/dev/null; then
+      git clone https://github.com/sdvim/nix-config.git "$FLAKE_DIR"
+    elif command -v xcode-select &>/dev/null; then
+      xcode-select --install 2>/dev/null || true
+      echo "Waiting for Xcode CLT install to complete..."
+      until command -v git &>/dev/null; do sleep 5; done
+      git clone https://github.com/sdvim/nix-config.git "$FLAKE_DIR"
+    else
+      echo "Error: git is not available and cannot be installed automatically."
+      exit 1
+    fi
+  fi
+  exec bash "$FLAKE_DIR/setup.sh" "$@"
+fi
+
+# ──────────────────────────────────────────────
+# Host detection
+# ──────────────────────────────────────────────
+HOST="${1:-$(hostname -s)}"
+KNOWN_HOSTS=("air" "mini")
+
+host_valid=false
+for h in "${KNOWN_HOSTS[@]}"; do
+  [[ "$HOST" == "$h" ]] && host_valid=true
+done
+
+if ! $host_valid; then
+  echo "Error: unknown host '$HOST'. Known hosts: ${KNOWN_HOSTS[*]}"
+  echo "Usage: $0 [hostname]"
+  exit 1
+fi
+
 FLAKE_DIR="$(cd "$(dirname "$0")" && pwd)"
-FLAKE_REF="$FLAKE_DIR#air"
+FLAKE_REF="$FLAKE_DIR#$HOST"
 
 # Colors
 bold='\033[1m'
@@ -24,6 +64,8 @@ info()  { printf "${green}>>>${reset} %s\n" "$1"; }
 warn()  { printf "${yellow}>>>${reset} %s\n" "$1"; }
 skip()  { printf "    Skipped.\n"; }
 
+info "Setting up host: $HOST"
+
 # ──────────────────────────────────────────────
 # 1. Install Nix
 # ──────────────────────────────────────────────
@@ -32,7 +74,11 @@ if command -v nix &>/dev/null; then
 else
   if ask "Install Nix?"; then
     curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
-    info "Nix installed. You may need to restart your shell."
+    # Source nix-daemon so nix is available in this shell
+    if [[ -e /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]]; then
+      . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+    fi
+    info "Nix installed."
   else
     skip
   fi
