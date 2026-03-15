@@ -27,18 +27,27 @@ fi
 # ──────────────────────────────────────────────
 # Host detection
 # ──────────────────────────────────────────────
-HOST="${1:-$(hostname -s)}"
 KNOWN_HOSTS=("air" "mini")
 
+if [[ -n "$1" ]]; then
+  HOST="$1"
+else
+  HOST="$(hostname -s)"
+fi
+
+# Validate host; prompt to pick if auto-detected host is unknown
 host_valid=false
 for h in "${KNOWN_HOSTS[@]}"; do
   [[ "$HOST" == "$h" ]] && host_valid=true
 done
 
 if ! $host_valid; then
-  echo "Error: unknown host '$HOST'. Known hosts: ${KNOWN_HOSTS[*]}"
-  echo "Usage: $0 [hostname]"
-  exit 1
+  echo "Detected hostname '$HOST' is not a known host."
+  echo "Pick a host to set up:"
+  select HOST in "${KNOWN_HOSTS[@]}"; do
+    [[ -n "$HOST" ]] && break
+    echo "Invalid selection. Try again."
+  done
 fi
 
 FLAKE_DIR="$(cd "$(dirname "$0")" && pwd)"
