@@ -5,7 +5,6 @@ _: {
       #!/bin/bash
       input=$(cat)
 
-      export CLAUDE_MODEL=$(echo "$input" | jq -r '.model.display_name // "?"')
       export CLAUDE_CONTEXT=$(printf '%s%%' "$(echo "$input" | jq -r '.context_window.used_percentage // 0' | cut -d. -f1)")
 
       session_name=$(echo "$input" | jq -r '.session_name // empty')

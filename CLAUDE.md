@@ -12,7 +12,9 @@ sudo darwin-rebuild switch --flake ~/nix-config#<hostname>
 ## Architecture
 
 - `flake.nix` — Flake inputs and `mkHost` helper that defines per-host configs (`air`, `mini`)
-- `darwin.nix` — System-level config: macOS defaults, keyboard, dock, finder, homebrew casks, fonts
+- `hosts/darwin.nix` — Shared system-level config: macOS defaults, keyboard, dock, finder, homebrew casks, fonts
+- `hosts/air.nix` — Air-specific overrides
+- `hosts/mini.nix` — Mini-specific overrides (e.g. keyboard remapping)
 - `home.nix` — User-level config: packages, git, starship, tmux, ghostty, gh
 - `config/` — Raw config files managed via `home.file` (e.g. ghostty)
 - `fonts/` — Berkeley Mono Nerd Font TTFs (encrypted via git-crypt)
@@ -33,7 +35,7 @@ git-crypt status
 
 ## Important: All changes go through Nix
 
-Everything in this repo is declarative. Never edit dotfiles or config files directly in `~` — always make changes in the Nix source files (`home.nix`, `darwin.nix`, `config/`, etc.) and rebuild. After any change, run the rebuild command above. New files under `config/` must be `git add`ed before rebuilding (flakes only see tracked files).
+Everything in this repo is declarative. Never edit dotfiles or config files directly in `~` — always make changes in the Nix source files (`home.nix`, `hosts/`, `config/`, etc.) and rebuild. After any change, run the rebuild command above. New files under `config/` must be `git add`ed before rebuilding (flakes only see tracked files).
 
 ## Documentation
 

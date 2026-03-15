@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 {
   imports = [ ./claude.nix ];
 
@@ -395,21 +395,18 @@
     syntaxHighlighting.enable = true;
     enableCompletion = true;
     completionInit = "autoload -U compinit && compinit -C";
-    initContent = ''
-      # Menu-style tab completion (navigate with arrows)
-      zstyle ':completion:*' menu select
-      zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
+    initContent = lib.mkMerge [
+      ''
+        # Menu-style tab completion (navigate with arrows)
+        zstyle ':completion:*' menu select
+        zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
 
-      # Word navigation (Alt+arrows)
-      bindkey '\e[1;3D' backward-word
-      bindkey '\e[1;3C' forward-word
+        # Word navigation (Alt+arrows)
+        bindkey '\e[1;3D' backward-word
+        bindkey '\e[1;3C' forward-word
 
-      # Rebind fzf cd widget from Alt+C to Ctrl+F
-      bindkey -r '\ec'
-      bindkey '^F' fzf-cd-widget
-
-      # Shadow standard tools with modern alternatives — guard from agents
-      if [[ -z "$CLAUDECODE" && -z "$CODEX_SANDBOX" ]]; then
+        # Shadow standard tools with modern alternatives — guard from agents
+        if [[ -z "$CLAUDECODE" && -z "$CODEX_SANDBOX" ]]; then
         alias cat="bat"
         alias find="fd"
         alias grep="rg"
@@ -448,14 +445,22 @@
           return $?
         fi
       }
-    '';
+    ''
+      (lib.mkOrder 950 ''
+        # Rebind fzf cd widget from Alt+C to Ctrl+F (after fzf at 910)
+        bindkey -r '\ec'
+        if zle -la | grep -q fzf-cd-widget; then
+          bindkey '^F' fzf-cd-widget
+        fi
+      '')
+    ];
   };
 
   programs.starship = {
     enable = true;
     enableZshIntegration = true;
     settings = {
-      format = "$directory$git_branch$git_status\${env_var.CLAUDE_MODEL}\${env_var.CLAUDE_CONTEXT}\${env_var.CLAUDE_SESSION}$character";
+      format = "$directory$git_branch$git_status\${env_var.CLAUDE_CONTEXT}\${env_var.CLAUDE_SESSION}$character";
       right_format = "$cmd_duration";
 
       character = {
@@ -489,12 +494,6 @@
       };
 
       env_var = {
-        CLAUDE_MODEL = {
-          variable = "CLAUDE_MODEL";
-          format = "[\\[$env_value\\]]($style) ";
-          style = "bold cyan";
-        };
-
         CLAUDE_CONTEXT = {
           variable = "CLAUDE_CONTEXT";
           format = "[$env_value]($style) ";

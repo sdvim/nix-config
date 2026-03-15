@@ -19,7 +19,7 @@
   fonts.packages = [
     (pkgs.runCommand "berkeley-mono-nerd-font" { } ''
       mkdir -p $out/share/fonts/truetype
-      cp ${./fonts}/*.ttf $out/share/fonts/truetype/
+      cp ${../fonts}/*.ttf $out/share/fonts/truetype/
     '')
     pkgs.nerd-fonts.jetbrains-mono
   ];
@@ -152,7 +152,7 @@
   system.activationScripts.postActivation.text = ''
     mkdir -p /Library/Logs/Kanata
 
-    # osascript -e 'tell application "System Events" to tell every desktop to set picture to POSIX file "/System/Library/Desktop Pictures/Solid Colors/Black.png"'
+    osascript -e 'tell application "System Events" to tell every desktop to set picture to POSIX file "/System/Library/Desktop Pictures/Solid Colors/Black.png"'
 
     # Exclude ~/Git from Spotlight indexing
     if ! mdutil -s /Users/stevedv/Git 2>&1 | grep -q "Indexing disabled"; then

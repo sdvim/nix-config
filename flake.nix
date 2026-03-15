@@ -26,16 +26,21 @@
       system = "aarch64-darwin";
       pkgs = nixpkgs.legacyPackages.${system};
       mkHost =
-        { hostName, computerName }:
+        {
+          hostName,
+          computerName,
+          hostModules ? [ ],
+        }:
         nix-darwin.lib.darwinSystem {
           modules = [
             { nixpkgs.hostPlatform = system; }
-            ./darwin.nix
+            ./hosts/darwin.nix
             {
               networking.hostName = hostName;
               networking.computerName = computerName;
               networking.localHostName = hostName;
             }
+          ] ++ hostModules ++ [
             home-manager.darwinModules.home-manager
             {
               home-manager.useGlobalPkgs = true;
@@ -60,11 +65,13 @@
       darwinConfigurations."air" = mkHost {
         hostName = "air";
         computerName = "Steve's Macbook";
+        hostModules = [ ./hosts/air.nix ];
       };
 
       darwinConfigurations."mini" = mkHost {
         hostName = "mini";
         computerName = "Steve's Mac Mini";
+        hostModules = [ ./hosts/mini.nix ];
       };
     };
 }
