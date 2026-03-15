@@ -1,9 +1,4 @@
 _: {
-  home.packages = [
-    # TODO: uncomment after uninstalling brew claude-code
-    # pkgs.claude-code
-  ];
-
   home.file.".claude/statusline.sh" = {
     executable = true;
     text = ''

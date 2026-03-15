@@ -13,12 +13,6 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    # TODO: uncomment after uninstalling brew claude-code
-    # claude-code = {
-    #   url = "github:sadjow/claude-code-nix";
-    # };
-
   };
 
   outputs =

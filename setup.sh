@@ -176,4 +176,18 @@ else
   skip
 fi
 
+# ──────────────────────────────────────────────
+# 7. Install Claude Code
+# ──────────────────────────────────────────────
+if command -v claude &>/dev/null; then
+  info "Claude Code is already installed."
+else
+  if ask "Install Claude Code (via npm)?"; then
+    npm install -g @anthropic-ai/claude-code
+    info "Claude Code installed."
+  else
+    skip
+  fi
+fi
+
 printf "\n${bold}${green}Setup finished.${reset}\n"
