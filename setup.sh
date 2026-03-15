@@ -177,7 +177,99 @@ else
 fi
 
 # ──────────────────────────────────────────────
-# 7. Install Claude Code
+# 7. GitHub CLI login
+# ──────────────────────────────────────────────
+if gh auth status &>/dev/null; then
+  info "GitHub CLI is already authenticated."
+else
+  if ask "Log in to GitHub CLI?"; then
+    gh auth login
+    info "GitHub CLI authenticated."
+  else
+    skip
+  fi
+fi
+
+# ──────────────────────────────────────────────
+# 8. SSH key generation + GitHub upload
+# ──────────────────────────────────────────────
+if [[ -f "$HOME/.ssh/id_ed25519" ]]; then
+  info "SSH key already exists."
+else
+  if ask "Generate SSH key and add to GitHub?"; then
+    ssh-keygen -t ed25519 -C "$(hostname -s)" -f "$HOME/.ssh/id_ed25519" -N ""
+    ssh-keyscan github.com >> "$HOME/.ssh/known_hosts" 2>/dev/null
+    gh ssh-key add "$HOME/.ssh/id_ed25519.pub" --title "$(hostname -s)"
+    info "SSH key generated and added to GitHub."
+  else
+    skip
+  fi
+fi
+
+# Switch nix-config remote to SSH if still HTTPS
+CURRENT_REMOTE="$(git -C "$FLAKE_DIR" remote get-url origin)"
+if [[ "$CURRENT_REMOTE" == https://* ]]; then
+  git -C "$FLAKE_DIR" remote set-url origin git@github.com:sdvim/nix-config.git
+  info "Switched nix-config remote to SSH."
+else
+  info "nix-config remote is already SSH."
+fi
+
+# ──────────────────────────────────────────────
+# 9. GPG key import from Bitwarden
+# ──────────────────────────────────────────────
+GPG_KEY_ID="333487C4FFB88C8D"
+if gpg --list-secret-keys "$GPG_KEY_ID" &>/dev/null; then
+  info "GPG key $GPG_KEY_ID already imported."
+else
+  if ask "Import GPG key from Bitwarden?"; then
+    # Login/unlock Bitwarden
+    if ! bw login --check &>/dev/null; then
+      export BW_SESSION="$(bw login --raw)"
+    fi
+    if [[ -z "$BW_SESSION" ]]; then
+      export BW_SESSION="$(bw unlock --raw)"
+    fi
+
+    # Find the GPG key item
+    BW_ITEM="$(bw list items --search 'GPG Secret Key' --session "$BW_SESSION" | jq -r '.[0]')"
+    BW_ITEM_ID="$(echo "$BW_ITEM" | jq -r '.id')"
+
+    # Get the key attachment and passphrase
+    GPG_KEY_FILE="$(mktemp)"
+    bw get attachment "secret-key.asc" --itemid "$BW_ITEM_ID" --output "$GPG_KEY_FILE" --session "$BW_SESSION"
+    GPG_PASSPHRASE="$(echo "$BW_ITEM" | jq -r '.fields[] | select(.name == "Passphrase") | .value')"
+
+    # Import the key
+    echo "$GPG_PASSPHRASE" | gpg --batch --passphrase-fd 0 --import "$GPG_KEY_FILE"
+    rm -f "$GPG_KEY_FILE"
+
+    # Pre-cache passphrase in gpg-agent
+    GPG_KEYGRIP="$(gpg --with-keygrip --list-secret-keys "$GPG_KEY_ID" | grep -m1 Keygrip | awk '{print $3}')"
+    echo "$GPG_PASSPHRASE" | /usr/local/libexec/gpg-preset-passphrase --preset "$GPG_KEYGRIP"
+
+    info "GPG key imported and passphrase cached."
+  else
+    skip
+  fi
+fi
+
+# ──────────────────────────────────────────────
+# 10. git-crypt unlock
+# ──────────────────────────────────────────────
+if git -C "$FLAKE_DIR" crypt status 2>/dev/null | grep -q "encrypted:"; then
+  if ask "Unlock git-crypt (for encrypted fonts)?"; then
+    git -C "$FLAKE_DIR" crypt unlock
+    info "git-crypt unlocked."
+  else
+    skip
+  fi
+else
+  info "git-crypt already unlocked (or no encrypted files)."
+fi
+
+# ──────────────────────────────────────────────
+# 11. Install Claude Code
 # ──────────────────────────────────────────────
 if command -v claude &>/dev/null; then
   info "Claude Code is already installed."

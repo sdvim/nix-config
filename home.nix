@@ -102,6 +102,7 @@
       pull.rebase = true;
       core.editor = "nvim";
       init.defaultBranch = "main";
+      credential.helper = "!gh auth git-credential";
     };
   };
 
@@ -536,4 +537,16 @@
       git_protocol = "ssh";
     };
   };
+
+  programs.gpg = {
+    enable = true;
+    settings = {
+      pinentry-mode = "loopback";
+    };
+  };
+
+  home.file.".gnupg/gpg-agent.conf".text = ''
+    allow-loopback-pinentry
+    allow-preset-passphrase
+  '';
 }
