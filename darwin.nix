@@ -8,6 +8,8 @@
   ];
   nix.settings.warn-dirty = false;
 
+  environment.systemPath = [ "/opt/homebrew/bin" ];
+
   system.primaryUser = "stevedv";
   users.users.stevedv = {
     name = "stevedv";
