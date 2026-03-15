@@ -40,7 +40,9 @@
               networking.computerName = computerName;
               networking.localHostName = hostName;
             }
-          ] ++ hostModules ++ [
+          ]
+          ++ hostModules
+          ++ [
             home-manager.darwinModules.home-manager
             {
               home-manager.useGlobalPkgs = true;

@@ -1,4 +1,9 @@
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 {
   imports = [ ./claude.nix ];
 
@@ -397,55 +402,55 @@
     completionInit = "autoload -U compinit && compinit -C";
     initContent = lib.mkMerge [
       ''
-        # Menu-style tab completion (navigate with arrows)
-        zstyle ':completion:*' menu select
-        zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
+          # Menu-style tab completion (navigate with arrows)
+          zstyle ':completion:*' menu select
+          zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
 
-        # Word navigation (Alt+arrows)
-        bindkey '\e[1;3D' backward-word
-        bindkey '\e[1;3C' forward-word
+          # Word navigation (Alt+arrows)
+          bindkey '\e[1;3D' backward-word
+          bindkey '\e[1;3C' forward-word
 
-        # Shadow standard tools with modern alternatives — guard from agents
-        if [[ -z "$CLAUDECODE" && -z "$CODEX_SANDBOX" ]]; then
-        alias cat="bat"
-        alias find="fd"
-        alias grep="rg"
-        alias ls="eza --icons=always -a"
-        alias tree="eza -T -L 4 -a --git-ignore --color=always"
-      fi
-
-      gd() { git status -s && echo && git diff "$@"; }
-
-      z() {
-        __zoxide_doctor
-        if [[ "$#" -eq 0 ]]; then
-          __zoxide_cd ~
-        elif [[ "$#" -eq 1 ]] && { [[ -d "$1" ]] || [[ "$1" = '-' ]] || [[ "$1" =~ ^[-+][0-9]+$ ]]; }; then
-          __zoxide_cd "$1"
-        elif [[ "$#" -eq 2 ]] && [[ "$1" = "--" ]]; then
-          __zoxide_cd "$2"
-        else
-          local current result
-          current="$(__zoxide_pwd)"
-          result="$(command zoxide query --exclude "$current" -- "$@" 2>/dev/null)" && {
-            __zoxide_cd "$result"
-            return
-          }
-
-          # No-op success when already in zoxide's only match.
-          result="$(command zoxide query -- "$@" 2>/dev/null)" && {
-            if [[ "$result" == "$current" ]]; then
-              return 0
-            fi
-            __zoxide_cd "$result"
-            return $?
-          }
-
-          command zoxide query --exclude "$current" -- "$@" >/dev/null
-          return $?
+          # Shadow standard tools with modern alternatives — guard from agents
+          if [[ -z "$CLAUDECODE" && -z "$CODEX_SANDBOX" ]]; then
+          alias cat="bat"
+          alias find="fd"
+          alias grep="rg"
+          alias ls="eza --icons=always -a"
+          alias tree="eza -T -L 4 -a --git-ignore --color=always"
         fi
-      }
-    ''
+
+        gd() { git status -s && echo && git diff "$@"; }
+
+        z() {
+          __zoxide_doctor
+          if [[ "$#" -eq 0 ]]; then
+            __zoxide_cd ~
+          elif [[ "$#" -eq 1 ]] && { [[ -d "$1" ]] || [[ "$1" = '-' ]] || [[ "$1" =~ ^[-+][0-9]+$ ]]; }; then
+            __zoxide_cd "$1"
+          elif [[ "$#" -eq 2 ]] && [[ "$1" = "--" ]]; then
+            __zoxide_cd "$2"
+          else
+            local current result
+            current="$(__zoxide_pwd)"
+            result="$(command zoxide query --exclude "$current" -- "$@" 2>/dev/null)" && {
+              __zoxide_cd "$result"
+              return
+            }
+
+            # No-op success when already in zoxide's only match.
+            result="$(command zoxide query -- "$@" 2>/dev/null)" && {
+              if [[ "$result" == "$current" ]]; then
+                return 0
+              fi
+              __zoxide_cd "$result"
+              return $?
+            }
+
+            command zoxide query --exclude "$current" -- "$@" >/dev/null
+            return $?
+          fi
+        }
+      ''
       (lib.mkOrder 950 ''
         # Rebind fzf cd widget from Alt+C to Ctrl+F (after fzf at 910)
         bindkey -r '\ec'
