@@ -31,8 +31,6 @@
     let
       system = "aarch64-darwin";
       pkgs = nixpkgs.legacyPackages.${system};
-    in
-    let
       mkHost =
         { hostName, computerName }:
         nix-darwin.lib.darwinSystem {
