@@ -151,11 +151,6 @@
     source = ./scripts/gitloc;
   };
 
-  home.file.".local/bin/tmux-pane-bg" = {
-    executable = true;
-    source = ./scripts/tmux-pane-bg;
-  };
-
   home.file.".local/bin/tmux-session" = {
     executable = true;
     source = ./scripts/tmux-session;
@@ -219,17 +214,17 @@
     set -g window-status-current-format '#I:#(~/.local/bin/tmux-fmt-dir #{pane_current_path}):#(~/.local/bin/tmux-fmt-cmd #{pane_current_command})'
     set -g window-status-current-style 'bold'
     set -g window-status-style 'dim'
-    set-hook -g pane-focus-in 'set-option -p -u @claude_waiting; refresh-client -S'
-    set-hook -g window-pane-changed 'set-option -p -u @claude_waiting; refresh-client -S'
-    set-hook -g session-window-changed 'set-option -p -u @claude_waiting; refresh-client -S'
+    set -g pane-border-format '#{?@claude_waiting,#[fg=colour16 bg=colour208] waiting for input #[default],}'
+    set-hook -g pane-focus-in 'set-option -p -u @claude_waiting; set-option -w pane-border-status off; refresh-client -S'
+    set-hook -g window-pane-changed 'set-option -p -u @claude_waiting; set-option -w pane-border-status off; refresh-client -S'
+    set-hook -g session-window-changed 'set-option -p -u @claude_waiting; set-option -w pane-border-status off; refresh-client -S'
 
     # Dim pane borders
     set -g pane-border-style 'fg=colour238'
     set -g pane-active-border-style 'fg=colour238'
 
-    # Dim inactive panes — bg color queried from terminal at startup
-    set-environment -g TMUX_INACTIVE_BG "$TMUX_INACTIVE_BG"
-    run-shell 'tmux set -g window-style "fg=colour240,bg=''${TMUX_INACTIVE_BG:-default}"'
+    # Dim inactive panes (subtle foreground dim)
+    set -g window-style 'fg=colour251,bg=default'
     set -g window-active-style 'fg=terminal,bg=default'
 
     # Auto-equalize panes on split/close (skip when zoomed)
@@ -248,6 +243,30 @@
     bind-key % split-window -h -c '#{pane_current_path}'
     bind-key '"' split-window -v -c '#{pane_current_path}'
     bind-key c new-window -c '#{pane_current_path}'
+
+    # Select panes by number (prefix + N)
+    bind-key 0 select-pane -t :.0
+    bind-key 1 select-pane -t :.1
+    bind-key 2 select-pane -t :.2
+    bind-key 3 select-pane -t :.3
+    bind-key 4 select-pane -t :.4
+    bind-key 5 select-pane -t :.5
+    bind-key 6 select-pane -t :.6
+    bind-key 7 select-pane -t :.7
+    bind-key 8 select-pane -t :.8
+    bind-key 9 select-pane -t :.9
+
+    # Select windows by number (prefix + Alt+N)
+    bind-key M-0 select-window -t :0
+    bind-key M-1 select-window -t :1
+    bind-key M-2 select-window -t :2
+    bind-key M-3 select-window -t :3
+    bind-key M-4 select-window -t :4
+    bind-key M-5 select-window -t :5
+    bind-key M-6 select-window -t :6
+    bind-key M-7 select-window -t :7
+    bind-key M-8 select-window -t :8
+    bind-key M-9 select-window -t :9
 
     # Previous pane (reverse of built-in 'o')
     bind-key O select-pane -t :.-

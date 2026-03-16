@@ -34,7 +34,7 @@ keybind = super+k=text:\x02K
 keybind = super+n=text:\x02N
 keybind = super+grave_accent=text:\x02n
 
-# Tmux windows (replaces Ghostty tabs)
+# Tmux panes (select by number)
 keybind = super+t=text:\x02c
 keybind = super+0=text:\x020
 keybind = super+1=text:\x021
@@ -46,6 +46,19 @@ keybind = super+6=text:\x026
 keybind = super+7=text:\x027
 keybind = super+8=text:\x028
 keybind = super+9=text:\x029
+
+# Tmux windows (shift+cmd+N sends prefix + Alt+N)
+keybind = super+shift+0=text:\x02\x1b0
+keybind = super+shift+1=text:\x02\x1b1
+keybind = super+shift+2=text:\x02\x1b2
+keybind = super+shift+3=text:\x02\x1b3
+keybind = super+shift+4=text:\x02\x1b4
+keybind = super+shift+5=text:\x02\x1b5
+keybind = super+shift+6=text:\x02\x1b6
+keybind = super+shift+7=text:\x02\x1b7
+keybind = super+shift+8=text:\x02\x1b8
+keybind = super+shift+9=text:\x02\x1b9
+
 keybind = super+w=text:\x02x
 keybind = super+shift+bracket_left=text:\x02p
 keybind = super+shift+bracket_right=text:\x02n

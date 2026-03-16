@@ -1,5 +1,3 @@
 #!/bin/bash
-# Ghostty entry point: query background color, then start tmux.
-TMUX_INACTIVE_BG=$("$HOME/.local/bin/tmux-pane-bg" 2>/dev/null)
-export TMUX_INACTIVE_BG="${TMUX_INACTIVE_BG:-default}"
+# Ghostty entry point: start tmux.
 exec /etc/profiles/per-user/stevedv/bin/tmux new-session -A -s main

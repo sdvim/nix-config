@@ -17,7 +17,7 @@ _: {
           hooks = [
             {
               type = "command";
-              command = "tmux set-option -p @claude_waiting 1 2>/dev/null; tmux refresh-client -S 2>/dev/null; true";
+              command = "tmux set-option -p @claude_waiting 1 2>/dev/null; tmux set-option -w pane-border-status bottom 2>/dev/null; tmux refresh-client -S 2>/dev/null; true";
             }
           ];
         }
@@ -27,7 +27,7 @@ _: {
           hooks = [
             {
               type = "command";
-              command = "tmux set-option -p @claude_waiting 1 2>/dev/null; tmux refresh-client -S 2>/dev/null; true";
+              command = "tmux set-option -p @claude_waiting 1 2>/dev/null; tmux set-option -w pane-border-status bottom 2>/dev/null; tmux refresh-client -S 2>/dev/null; true";
             }
           ];
         }
@@ -37,7 +37,7 @@ _: {
           hooks = [
             {
               type = "command";
-              command = "tmux set-option -p @claude_waiting 1 2>/dev/null; tmux refresh-client -S 2>/dev/null; true";
+              command = "tmux set-option -p @claude_waiting 1 2>/dev/null; tmux set-option -w pane-border-status bottom 2>/dev/null; tmux refresh-client -S 2>/dev/null; true";
             }
           ];
         }
@@ -47,7 +47,7 @@ _: {
           hooks = [
             {
               type = "command";
-              command = "tmux set-option -p -u @claude_waiting 2>/dev/null; tmux refresh-client -S 2>/dev/null; true";
+              command = "tmux set-option -p -u @claude_waiting 2>/dev/null; tmux set-option -w pane-border-status off 2>/dev/null; tmux refresh-client -S 2>/dev/null; true";
             }
           ];
         }
@@ -58,7 +58,7 @@ _: {
   programs.zsh.initContent = ''
     # Clear stale @claude_waiting when back at shell prompt
     if [[ -n "$TMUX" ]]; then
-      _clear_claude_waiting() { tmux set-option -p -u @claude_waiting 2>/dev/null; tmux refresh-client -S 2>/dev/null; }
+      _clear_claude_waiting() { tmux set-option -p -u @claude_waiting 2>/dev/null; tmux set-option -w pane-border-status off 2>/dev/null; tmux refresh-client -S 2>/dev/null; }
       autoload -Uz add-zsh-hook
       add-zsh-hook precmd _clear_claude_waiting
     fi
