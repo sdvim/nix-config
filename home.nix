@@ -151,6 +151,16 @@
     source = ./scripts/gitloc;
   };
 
+  home.file.".local/bin/tmux-pane-bg" = {
+    executable = true;
+    source = ./scripts/tmux-pane-bg;
+  };
+
+  home.file.".local/bin/tmux-session" = {
+    executable = true;
+    source = ./scripts/tmux-session;
+  };
+
   home.activation.installGitHooks = config.lib.dag.entryAfter [ "writeBoundary" ] ''
     hooks_dir="$HOME/nix-config/.git/hooks"
     hook_src="$HOME/nix-config/hooks/pre-push"
@@ -167,9 +177,11 @@
     auto_update = true
   '';
 
-  home.file.".config/aerospace/aerospace.toml".source = ./config/aerospace/aerospace.toml;
+  home.file.".config/aerospace/aerospace.toml".text =
+    lib.mkDefault (builtins.readFile ./config/aerospace/aerospace.toml);
   home.file.".config/kanata/kanata.kbd".source = ./config/kanata/kanata.kbd;
-  home.file.".config/ghostty/config".source = ./config/ghostty/config;
+  home.file.".config/ghostty/config".text =
+    lib.mkDefault (builtins.readFile ./config/ghostty/config);
   home.file.".config/nvim".source =
     config.lib.file.mkOutOfStoreSymlink "/Users/stevedv/nix-config/config/nvim";
 
@@ -211,23 +223,34 @@
     set-hook -g window-pane-changed 'set-option -p -u @claude_waiting; refresh-client -S'
     set-hook -g session-window-changed 'set-option -p -u @claude_waiting; refresh-client -S'
 
-    # Hide pane borders
-    set -g pane-border-style 'fg=default'
-    set -g pane-active-border-style 'fg=default'
+    # Dim pane borders
+    set -g pane-border-style 'fg=colour238'
+    set -g pane-active-border-style 'fg=colour238'
 
-    # Dim inactive panes
-    set -g window-style 'fg=colour244'
-    set -g window-active-style 'fg=default'
+    # Dim inactive panes — bg color queried from terminal at startup
+    set-environment -g TMUX_INACTIVE_BG "$TMUX_INACTIVE_BG"
+    run-shell 'tmux set -g window-style "fg=colour240,bg=''${TMUX_INACTIVE_BG:-default}"'
+    set -g window-active-style 'fg=terminal,bg=default'
+
+    # Auto-equalize panes on split/close (skip when zoomed)
+    set-hook -g after-split-window "if-shell 'tmux display -p \"#{window_zoomed_flag}\" | grep -q 1' ''' 'select-layout -E'"
+    set-hook -g pane-exited "if-shell 'tmux display -p \"#{window_zoomed_flag}\" | grep -q 1' ''' 'select-layout -E'"
 
     # Extended keys so shift+enter etc. pass through to apps
     set -s extended-keys on
     set -s extended-keys-format csi-u
     set -as terminal-features ',xterm-ghostty:RGB:extkeys'
 
+    # Let apps know when their pane gains/loses focus (hides cursor in inactive panes)
+    set -g focus-events on
+
     # Splits and new windows inherit current directory
     bind-key % split-window -h -c '#{pane_current_path}'
     bind-key '"' split-window -v -c '#{pane_current_path}'
     bind-key c new-window -c '#{pane_current_path}'
+
+    # Previous pane (reverse of built-in 'o')
+    bind-key O select-pane -t :.-
 
     # Clear scrollback buffer (cmd+k via Ghostty)
     bind-key K send-keys C-l \; clear-history

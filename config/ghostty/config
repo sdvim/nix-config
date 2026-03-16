@@ -5,6 +5,7 @@ font-family = JetBrainsMono Nerd Font
 fullscreen = true
 
 theme = GitHub Dark High Contrast
+cursor-color = #ffffff
 
 # Hide tab bar entirely
 window-show-tab-bar = never
@@ -54,23 +55,12 @@ keybind = ctrl+shift+tab=text:\x02p
 # Tmux panes (replaces Ghostty splits)
 keybind = super+d=text:\x02%
 keybind = super+shift+d=text:\x02\x22
-keybind = super+bracket_left=text:\x02;
+keybind = super+bracket_left=text:\x02O
 keybind = super+bracket_right=text:\x02o
 keybind = super+shift+enter=text:\x02z
 
 # Shift+enter sends CSI 13;2u (kitty protocol) for apps like Claude Code
 keybind = shift+enter=text:\x1b[13;2u
 
-# Spotlight picker toggle — send F12 escape sequence so tmux can match it
-# in both root and popup key tables (ctrl+' CSI-u encoding breaks popup table)
-keybind = global:ctrl+apostrophe=toggle_quick_terminal
-
-# Spotlight picker toggle — send F12 escape sequence so tmux can match it
-keybind = shift+ctrl+apostrophe=text:\x1b[24~
-quick-terminal-position = center
-quick-terminal-size = 80%
-quick-terminal-autohide = true
-quick-terminal-animation-duration = 0
-
 # Launch into tmux
-command = /etc/profiles/per-user/stevedv/bin/tmux new-session -A -s main
+command = /Users/stevedv/.local/bin/tmux-session

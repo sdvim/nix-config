@@ -1,4 +1,13 @@
 _: {
+  # Mini: focus Ghostty via AeroSpace (dedicated fullscreen monitor)
+  home-manager.users.stevedv.home.file.".config/aerospace/aerospace.toml".text =
+    builtins.readFile ../config/aerospace/aerospace.toml
+    + ''
+
+      # Focus Ghostty window (mini has a dedicated fullscreen monitor)
+      ctrl-quote = 'exec-and-forget open -a Ghostty'
+    '';
+
   system.keyboard.swapLeftCommandAndLeftAlt = true;
 
   # Wake-on-LAN
