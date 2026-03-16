@@ -58,6 +58,12 @@
           gregorian = 2;
         };
       };
+      "net.imput.helium" = {
+        ExtensionInstallForcelist = [
+          "dbepggeogbaibhgnhhndojpepiihcmeb;https://clients2.google.com/service/update2/crx"
+          "aeblfdkhhhdcdjpifhhbdiojplfjncoa;https://clients2.google.com/service/update2/crx"
+        ];
+      };
     };
 
     dock = {
@@ -107,9 +113,17 @@
 
   homebrew = {
     enable = true;
+    taps = [
+      "nikitabobko/tap"
+    ];
+    brews = [
+      "cocoapods"
+      "displayplacer"
+    ];
     casks = [
+      "nikitabobko/tap/aerospace"
       "android-studio"
-      "bitwarden"
+      "1password"
       "codex"
       "ghostty"
       "helium-browser"
@@ -117,6 +131,9 @@
       "zed"
       # "karabiner-elements"  # requires interactive sudo for pkg install
     ];
+    masApps = {
+      "Xcode" = 497799835;
+    };
     onActivation.cleanup = "zap";
   };
 

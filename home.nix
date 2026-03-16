@@ -18,7 +18,7 @@
     ast-grep
     bat
     biome
-    bitwarden-cli
+
     bun
     colima
     docker-client
@@ -419,4 +419,5 @@
     allow-loopback-pinentry
     allow-preset-passphrase
   '';
+
 }

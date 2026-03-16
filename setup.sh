@@ -216,39 +216,20 @@ else
 fi
 
 # ──────────────────────────────────────────────
-# 9. GPG key import from Bitwarden
+# 9. GPG key import from 1Password
 # ──────────────────────────────────────────────
 GPG_KEY_ID="333487C4FFB88C8D"
 if gpg --list-secret-keys "$GPG_KEY_ID" &>/dev/null; then
   info "GPG key $GPG_KEY_ID already imported."
 else
-  if ask "Import GPG key from Bitwarden?"; then
-    # Login/unlock Bitwarden
-    if ! bw login --check &>/dev/null; then
-      export BW_SESSION="$(bw login --raw)"
-    fi
-    if [[ -z "$BW_SESSION" ]]; then
-      export BW_SESSION="$(bw unlock --raw)"
-    fi
-
-    # Find the GPG key item
-    BW_ITEM="$(bw list items --search 'GPG Secret Key' --session "$BW_SESSION" | jq -r '.[0]')"
-    BW_ITEM_ID="$(echo "$BW_ITEM" | jq -r '.id')"
-
-    # Get the key attachment and passphrase
-    GPG_KEY_FILE="$(mktemp)"
-    bw get attachment "secret-key.asc" --itemid "$BW_ITEM_ID" --output "$GPG_KEY_FILE" --session "$BW_SESSION"
-    GPG_PASSPHRASE="$(echo "$BW_ITEM" | jq -r '.fields[] | select(.name == "Passphrase") | .value')"
-
-    # Import the key
-    echo "$GPG_PASSPHRASE" | gpg --batch --passphrase-fd 0 --import "$GPG_KEY_FILE"
-    rm -f "$GPG_KEY_FILE"
-
-    # Pre-cache passphrase in gpg-agent
-    GPG_KEYGRIP="$(gpg --with-keygrip --list-secret-keys "$GPG_KEY_ID" | grep -m1 Keygrip | awk '{print $3}')"
-    echo "$GPG_PASSPHRASE" | /usr/local/libexec/gpg-preset-passphrase --preset "$GPG_KEYGRIP"
-
-    info "GPG key imported and passphrase cached."
+  if ask "Import GPG key from 1Password?"; then
+    # TODO: Migrate GPG key to 1Password (Personal vault) and implement:
+    #   1. Sign in:        eval "$(op signin)"
+    #   2. Fetch key:      op document get "GPG Secret Key" --out-file "$GPG_KEY_FILE"
+    #   3. Get passphrase: op item get "GPG Secret Key" --fields label=Passphrase
+    #   4. Import + preset passphrase in gpg-agent (same as before)
+    warn "GPG key import from 1Password is not yet implemented."
+    warn "Please import your GPG key manually for now."
   else
     skip
   fi
