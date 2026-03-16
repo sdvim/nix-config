@@ -63,7 +63,7 @@
   ];
 
   home.shellAliases = {
-    rebuild = "sudo darwin-rebuild switch --flake ~/nix-config#$(hostname -s) && source ~/.zshrc && tmux source-file ~/.tmux.conf 2>/dev/null; true";
+    rebuild = "sudo darwin-rebuild switch --flake ~/nix-config#$(hostname -s) && source ~/.zshrc && tmux source-file ~/.tmux.conf 2>/dev/null; aerospace reload-config 2>/dev/null; true";
 
     g = "git";
     ga = "git add .";

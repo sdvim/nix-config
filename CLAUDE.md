@@ -4,9 +4,11 @@ nix-darwin + Home Manager configuration for macOS (Apple Silicon).
 
 ## Build
 
+There is a shell alias `rebuild` that wraps the full build command (including sourcing zshrc, reloading tmux, and reloading aerospace). Always nudge the user to run `rebuild` rather than spelling out the full command.
+
 ```bash
-sudo darwin-rebuild switch --flake ~/nix-config#<hostname>
-# e.g. #air or #mini
+rebuild
+# equivalent to: sudo darwin-rebuild switch --flake ~/nix-config#$(hostname -s) && source ~/.zshrc && tmux source-file ~/.tmux.conf 2>/dev/null; aerospace reload-config 2>/dev/null; true
 ```
 
 ## Architecture
