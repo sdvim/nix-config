@@ -17,7 +17,7 @@ _: {
           hooks = [
             {
               type = "command";
-              command = "tmux set-option -p @claude_waiting 1 2>/dev/null; tmux set-option -w pane-border-status bottom 2>/dev/null; tmux refresh-client -S 2>/dev/null; true";
+              command = "tmux refresh-client -S 2>/dev/null; true";
             }
           ];
         }

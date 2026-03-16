@@ -38,7 +38,6 @@
     nodejs_24
     pnpm
     ripgrep
-    sesh
     tealdeer
     tmux
     tmuxPlugins.continuum
@@ -85,7 +84,7 @@
     docker-start = "colima start";
     docker-stop = "colima stop";
 
-    c = "claude --dangerously-skip-permissions";
+    c = "claude --dangerously-skip-permissions --permission-mode plan";
     cx = "codex --dangerously-bypass-approvals-and-sandbox";
   };
 
@@ -126,16 +125,6 @@
     source = ./scripts/tmux-detach-window;
   };
 
-  home.file.".local/bin/sesh-picker-list" = {
-    executable = true;
-    source = ./scripts/sesh-picker-list;
-  };
-
-  home.file.".local/bin/sesh-picker" = {
-    executable = true;
-    source = ./scripts/sesh-picker;
-  };
-
   home.file.".local/bin/gcert" = {
     executable = true;
     source = ./scripts/gcert;
@@ -154,6 +143,16 @@
   home.file.".local/bin/tmux-session" = {
     executable = true;
     source = ./scripts/tmux-session;
+  };
+
+  home.file.".local/bin/worktree-scaffold" = {
+    executable = true;
+    source = ./scripts/worktree-scaffold;
+  };
+
+  home.file.".local/bin/keybindings-help" = {
+    executable = true;
+    source = ./scripts/keybindings-help;
   };
 
   home.activation.installGitHooks = config.lib.dag.entryAfter [ "writeBoundary" ] ''
@@ -211,7 +210,7 @@
     set -g allow-rename off
     set -g set-titles off
     set -g window-status-format '#{?#{@claude_waiting},#[fg=colour208],}#I:#(~/.local/bin/tmux-fmt-dir #{pane_current_path}):#(~/.local/bin/tmux-fmt-cmd #{pane_current_command})#{?#{@claude_waiting},!!#[default],}'
-    set -g window-status-current-format '#I:#(~/.local/bin/tmux-fmt-dir #{pane_current_path}):#(~/.local/bin/tmux-fmt-cmd #{pane_current_command})'
+    set -g window-status-current-format '#{?#{@claude_waiting},#[fg=colour208 bold],#[bold]}#I:#(~/.local/bin/tmux-fmt-dir #{pane_current_path}):#(~/.local/bin/tmux-fmt-cmd #{pane_current_command})#{?#{@claude_waiting},!!#[default],}'
     set -g window-status-current-style 'bold'
     set -g window-status-style 'dim'
     set -g pane-border-format '#{?@claude_waiting,#[fg=colour16 bg=colour208] waiting for input #[default],}'
@@ -272,20 +271,13 @@
     bind-key O select-pane -t :.-
 
     # Clear scrollback buffer (cmd+k via Ghostty)
-    bind-key K send-keys C-l \; clear-history
+    bind-key K if -F '#{m:[0-9]*,#{pane_current_command}}' {run-shell -b 'P="#{pane_id}"; tmux send-keys -t "$P" -l "/clear"; sleep 0.05; tmux send-keys -t "$P" Enter; sleep 0.5; tmux send-keys -t "$P" -l "/plan"; sleep 0.05; tmux send-keys -t "$P" Enter'} {send-keys C-l ; clear-history}
 
     # Detach window to new Ghostty window (cmd+n via Ghostty)
     bind-key N run-shell "$HOME/.local/bin/tmux-detach-window"
 
     # Forward shift+enter to apps (CSI u format for Claude Code)
     bind-key -n S-Enter send-keys Escape "[13;2u"
-
-    # Spotlight picker (ctrl+' to toggle)
-    # Ghostty intercepts ctrl+' and sends F12. In root table, F12 opens popup.
-    # Inside popup, F12 passes through to fzf which aborts on it (--bind f12:abort).
-    bind-key -n F12 display-popup -E -w 60% -h 60% "$HOME/.local/bin/sesh-picker"
-    # Fallback: direct ctrl+' for opening (works without Ghostty keybind)
-    bind-key -n C-\' display-popup -E -w 60% -h 60% "$HOME/.local/bin/sesh-picker"
 
     # Clear old bindings from previous config
     unbind-key r
@@ -295,6 +287,9 @@
 
     # View last tmux-cmd error log
     bind-key R new-window -n "error" "less -R /tmp/tmux-cmd-last-error"
+
+    # Keybinding cheatsheet (cmd+shift+? via Ghostty)
+    bind-key ? display-popup -E -w 80% -h 80% "$HOME/.local/bin/keybindings-help"
 
     # Increase scrollback
     set -g history-limit 50000

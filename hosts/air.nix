@@ -4,6 +4,10 @@ _: {
     builtins.readFile ../config/ghostty/config
     + ''
 
+      # Start in fullscreen with no decorations
+      fullscreen = true
+      window-decoration = none
+
       # Quick terminal toggle (ctrl+')
       keybind = global:ctrl+apostrophe=toggle_quick_terminal
 

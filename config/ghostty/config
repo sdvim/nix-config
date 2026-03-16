@@ -1,10 +1,8 @@
 # Font
 font-family = JetBrainsMono Nerd Font
 
-# Start in fullscreen
-fullscreen = true
-
 theme = GitHub Dark High Contrast
+background = #000000
 cursor-color = #ffffff
 
 # Hide tab bar entirely
@@ -12,7 +10,6 @@ window-show-tab-bar = never
 
 # Hide titlebar and window decorations
 macos-titlebar-style = hidden
-window-decoration = none
 window-padding-y = 0
 
 # Skip quit confirmation (tmux preserves sessions)
@@ -29,6 +26,8 @@ keybind = super+right=text:\x05
 keybind = alt+left=text:\x1b[1;3D
 keybind = alt+right=text:\x1b[1;3C
 keybind = super+shift+comma=text:\x02\x3a new-window -n config "nvim ~/nix-config/config/ghostty/config"\x0d
+keybind = super+shift+/=text:\x02?
+keybind = super+ctrl+f=toggle_fullscreen
 keybind = super+q=quit
 keybind = super+k=text:\x02K
 keybind = super+n=text:\x02N
