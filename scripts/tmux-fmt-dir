@@ -1,0 +1,7 @@
+#!/bin/bash
+case "$1" in
+  */nix-config)          echo "nix" ;;
+  */courtyard-frontend*) echo "cyfe" ;;
+  /Users/stevedv)        echo "~" ;;
+  *)                     basename "$1" ;;
+esac

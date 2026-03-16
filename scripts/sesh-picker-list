@@ -1,0 +1,6 @@
+#!/bin/bash
+# Generate spotlight picker entries
+echo "$ rebuild"
+echo "$ push"
+sesh list | while read -r s; do echo "◆ $s"; done
+fd --type f --max-depth 4 --exclude .git -c never 2>/dev/null | head -20 | while read -r f; do echo "… $f"; done

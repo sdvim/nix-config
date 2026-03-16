@@ -1,17 +1,7 @@
 _: {
   home.file.".claude/statusline.sh" = {
     executable = true;
-    text = ''
-      #!/bin/bash
-      input=$(cat)
-
-      export CLAUDE_CONTEXT=$(printf '%s%%' "$(echo "$input" | jq -r '.context_window.used_percentage // 0' | cut -d. -f1)")
-
-      session_name=$(echo "$input" | jq -r '.session_name // empty')
-      [[ -n "$session_name" ]] && export CLAUDE_SESSION="$session_name"
-
-      STARSHIP_SHELL= starship prompt
-    '';
+    source = ./scripts/claude-statusline.sh;
   };
 
   # Runtime overrides go in ~/.claude/settings.local.json

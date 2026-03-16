@@ -108,178 +108,32 @@
 
   home.file.".local/bin/tmux-fmt-dir" = {
     executable = true;
-    text = ''
-      #!/bin/bash
-      case "$1" in
-        */nix-config)          echo "nix" ;;
-        */courtyard-frontend*) echo "cyfe" ;;
-        /Users/stevedv)        echo "~" ;;
-        *)                     basename "$1" ;;
-      esac
-    '';
+    source = ./scripts/tmux-fmt-dir;
   };
 
   home.file.".local/bin/tmux-fmt-cmd" = {
     executable = true;
-    text = ''
-      #!/bin/bash
-      case "$1" in
-        [0-9]*)  echo "✱" ;;
-        codex*)  echo "¢" ;;
-        gemini*) echo "✦" ;;
-        *)       echo "$1" ;;
-      esac
-    '';
+    source = ./scripts/tmux-fmt-cmd;
   };
 
   home.file.".local/bin/tmux-cmd" = {
     executable = true;
-    text = ''
-      #!/bin/bash
-      # Usage: tmux-cmd <label> <command...>
-      # Example: tmux-cmd "rebuilding" sudo darwin-rebuild switch --flake ~/nix-config#$(hostname -s)
-      label="$1"; shift
-      STATEFILE="/tmp/tmux-cmd-state"
-      LOGFILE=$(mktemp /tmp/tmux-cmd-XXXXXX)
-      ln -sf "$LOGFILE" /tmp/tmux-cmd-live
-
-      # Spinner loop in background — show hotkey hint before label
-      spinner_frames=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
-      (
-        while true; do
-          for f in "''${spinner_frames[@]}"; do
-            printf "#[dim][^b w]#[default] %s %s" "$label" "$f" > "$STATEFILE"
-            tmux refresh-client -S
-            sleep 0.12
-          done
-        done
-      ) &
-      spinner_pid=$!
-
-      # Run the actual command, capture output
-      if "$@" >"$LOGFILE" 2>&1; then
-        kill $spinner_pid 2>/dev/null
-        ok_label="''${label%ing}"
-        printf "#[fg=green]%s OK#[default]" "$ok_label" > "$STATEFILE"
-      else
-        kill $spinner_pid 2>/dev/null
-        ok_label="''${label%ing}"
-        printf "#[dim][^b R]#[default] #[fg=red]%s FAILED#[default]" "$ok_label" > "$STATEFILE"
-        ln -sf "$LOGFILE" /tmp/tmux-cmd-last-error
-      fi
-      tmux refresh-client -S
-
-      sleep 5
-      : > "$STATEFILE"
-      tmux refresh-client -S
-    '';
+    source = ./scripts/tmux-cmd;
   };
 
   home.file.".local/bin/tmux-detach-window" = {
     executable = true;
-    text = ''
-      #!/bin/bash
-      set -euo pipefail
-
-      current_session="$(tmux display-message -p '#{session_name}')"
-      current_window="$(tmux display-message -p '#{window_id}')"
-      window_count="$(tmux display-message -p '#{session_windows}')"
-
-      # Don't detach the last window — would destroy the session
-      if [ "$window_count" -le 1 ]; then
-        tmux display-message "Cannot detach: only one window in session"
-        exit 0
-      fi
-
-      # Find next available session name: main-2, main-3, ...
-      n=2
-      while tmux has-session -t "''${current_session}-''${n}" 2>/dev/null; do
-        n=$((n + 1))
-      done
-      new_session="''${current_session}-''${n}"
-
-      # Create detached session (comes with a throwaway window)
-      tmux new-session -d -s "$new_session"
-
-      # Move current window to the new session
-      tmux move-window -s "$current_window" -t "''${new_session}:"
-
-      # Kill the throwaway window
-      for wid in $(tmux list-windows -t "$new_session" -F '#{window_id}'); do
-        if [ "$wid" != "$current_window" ]; then
-          tmux kill-window -t "$wid"
-        fi
-      done
-
-      # Renumber windows in both sessions
-      tmux move-window -r -t "$new_session"
-      tmux move-window -r -t "$current_session"
-
-      # Launch new Ghostty window attached to the new session
-      open -n -a Ghostty.app --args \
-        --quit-after-last-window-closed \
-        --fullscreen=true \
-        -e /etc/profiles/per-user/stevedv/bin/tmux attach-session -t "$new_session"
-    '';
+    source = ./scripts/tmux-detach-window;
   };
 
   home.file.".local/bin/sesh-picker-list" = {
     executable = true;
-    text = ''
-      #!/bin/bash
-      # Generate spotlight picker entries
-      echo "$ rebuild"
-      echo "$ push"
-      sesh list | while read -r s; do echo "◆ $s"; done
-      fd --type f --max-depth 4 --exclude .git -c never 2>/dev/null | head -20 | while read -r f; do echo "… $f"; done
-    '';
+    source = ./scripts/sesh-picker-list;
   };
 
   home.file.".local/bin/sesh-picker" = {
     executable = true;
-    text = ''
-      #!/bin/bash
-      CACHE="/tmp/sesh-picker-cache"
-
-      # Serve cache if fresh (<10m), refresh with ctrl+r
-      if [[ -f "$CACHE" ]] && (( $(date +%s) - $(stat -f %m "$CACHE") < 600 )); then
-        list=$(cat "$CACHE")
-      else
-        list=$("$HOME/.local/bin/sesh-picker-list")
-        echo "$list" > "$CACHE"
-      fi
-
-      choice=$(echo "$list" | fzf --height 100% --no-sort --ansi \
-          --history "$HOME/.sesh_picker_history" \
-          --bind "ctrl-c:abort,f12:abort" \
-          --bind "ctrl-r:reload($HOME/.local/bin/sesh-picker-list)")
-
-      [[ -z "$choice" ]] && exit 0
-
-      type="''${choice%% *}"
-      value="''${choice#* }"
-
-      case "$type" in
-        '$')
-          case "$value" in
-            rebuild) tmux run-shell -b "$HOME/.local/bin/tmux-cmd rebuilding sudo darwin-rebuild switch --flake ~/nix-config#$(hostname -s)" ;;
-            push)    tmux run-shell -b "$HOME/.local/bin/tmux-cmd pushing git push" ;;
-          esac
-          ;;
-        ◆)
-          dir="''${value/#\~/$HOME}"
-          name=$(basename "$dir")
-          # Switch to existing session, or create one in the directory
-          if tmux has-session -t "=$name" 2>/dev/null; then
-            tmux switch-client -t "=$name"
-          else
-            tmux new-session -d -s "$name" -c "$dir"
-            tmux switch-client -t "=$name"
-          fi
-          ;;
-        …) tmux new-window -c '#{pane_current_path}' "''${EDITOR:-nvim} '$value'" ;;
-      esac
-    '';
+    source = ./scripts/sesh-picker;
   };
 
   home.activation.installGitHooks = config.lib.dag.entryAfter [ "writeBoundary" ] ''
@@ -307,9 +161,9 @@
     # Fix PATH for Nix (so run-shell plugins can find tmux, bash, etc.)
     set-environment -g PATH "/etc/profiles/per-user/stevedv/bin:/run/current-system/sw/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
-    # Status bar: black background, at the top
+    # Status bar at the top, inherits terminal background
     set -g status-position top
-    set -g status-style 'bg=black'
+    set -g status-style 'bg=default'
     set -g status-left ' '
     set -g status-right '#(cat /tmp/tmux-cmd-state 2>/dev/null) '
     set -g status-right-length 80
@@ -342,12 +196,12 @@
     set-hook -g session-window-changed 'set-option -p -u @claude_waiting; refresh-client -S'
 
     # Hide pane borders
-    set -g pane-border-style 'fg=black'
-    set -g pane-active-border-style 'fg=black'
+    set -g pane-border-style 'fg=default'
+    set -g pane-active-border-style 'fg=default'
 
-    # Dim inactive panes (muted text + raised background)
-    set -g window-style 'fg=#555555,bg=#111111'
-    set -g window-active-style 'fg=#ffffff,bg=#000000'
+    # Dim inactive panes
+    set -g window-style 'fg=colour244'
+    set -g window-active-style 'fg=default'
 
     # Extended keys so shift+enter etc. pass through to apps
     set -s extended-keys on

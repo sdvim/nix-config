@@ -1,0 +1,37 @@
+#!/bin/bash
+# Usage: tmux-cmd <label> <command...>
+# Example: tmux-cmd "rebuilding" sudo darwin-rebuild switch --flake ~/nix-config#$(hostname -s)
+label="$1"; shift
+STATEFILE="/tmp/tmux-cmd-state"
+LOGFILE=$(mktemp /tmp/tmux-cmd-XXXXXX)
+ln -sf "$LOGFILE" /tmp/tmux-cmd-live
+
+# Spinner loop in background — show hotkey hint before label
+spinner_frames=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
+(
+  while true; do
+    for f in "${spinner_frames[@]}"; do
+      printf "#[dim][^b w]#[default] %s %s" "$label" "$f" > "$STATEFILE"
+      tmux refresh-client -S
+      sleep 0.12
+    done
+  done
+) &
+spinner_pid=$!
+
+# Run the actual command, capture output
+if "$@" >"$LOGFILE" 2>&1; then
+  kill $spinner_pid 2>/dev/null
+  ok_label="${label%ing}"
+  printf "#[fg=green]%s OK#[default]" "$ok_label" > "$STATEFILE"
+else
+  kill $spinner_pid 2>/dev/null
+  ok_label="${label%ing}"
+  printf "#[dim][^b R]#[default] #[fg=red]%s FAILED#[default]" "$ok_label" > "$STATEFILE"
+  ln -sf "$LOGFILE" /tmp/tmux-cmd-last-error
+fi
+tmux refresh-client -S
+
+sleep 5
+: > "$STATEFILE"
+tmux refresh-client -S
