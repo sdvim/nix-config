@@ -58,6 +58,12 @@
           gregorian = 2;
         };
       };
+      "net.imput.helium" = {
+        ExtensionInstallForcelist = [
+          "dbepggeogbaibhgnhhndojpepiihcmeb;https://clients2.google.com/service/update2/crx"
+          "aeblfdkhhhdcdjpifhhbdiojplfjncoa;https://clients2.google.com/service/update2/crx"
+        ];
+      };
     };
 
     dock = {
@@ -124,6 +130,7 @@
       "1password"
       "codex"
       "ghostty"
+      "helium-browser"
       "obsidian"
       "zed"
       # "karabiner-elements"  # requires interactive sudo for pkg install
