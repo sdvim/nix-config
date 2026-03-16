@@ -2,12 +2,13 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: worktree-scaffold <repo-path> <suffix1> [suffix2] ..."
+  echo "Usage: worktree-scaffold <suffix1> [suffix2] ..."
   echo ""
   echo "Creates git worktrees for each suffix, branching from the main branch."
+  echo "Must be run from within a git repository."
   echo ""
-  echo "Example:"
-  echo "  worktree-scaffold ~/Git/courtyard-frontend aaa bbb ccc"
+  echo "Example (from ~/Git/courtyard-frontend):"
+  echo "  worktree-scaffold aaa bbb ccc"
   echo ""
   echo "Creates:"
   echo "  ~/Git/courtyard-frontend-aaa on branch main-aaa"
@@ -16,18 +17,15 @@ usage() {
   exit 1
 }
 
-if [[ $# -lt 2 ]]; then
+if [[ $# -lt 1 ]]; then
   usage
 fi
 
-repo_path="$(cd "$1" && pwd)"
-shift
-suffixes=("$@")
-
-if ! git -C "$repo_path" rev-parse --git-dir &>/dev/null; then
-  echo "Error: '$repo_path' is not a git repository" >&2
+repo_path="$(git rev-parse --show-toplevel 2>/dev/null)" || {
+  echo "Error: not inside a git repository" >&2
   exit 1
-fi
+}
+suffixes=("$@")
 
 basename="$(basename "$repo_path")"
 parent="$(dirname "$repo_path")"

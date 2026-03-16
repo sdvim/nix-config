@@ -1,7 +1,22 @@
 #!/bin/bash
-case "$1" in
-  */nix-config)          echo "nix" ;;
-  */courtyard-frontend*) echo "cyfe" ;;
-  /Users/stevedv)        echo "~" ;;
-  *)                     basename "$1" ;;
+dir="$1"
+
+alias_dir() {
+  local path="$1" base="$2" alias="$3"
+  if [[ "$path" == */"$base"/* || "$path" == */"$base" ]]; then
+    echo "$alias"; return 0
+  elif [[ "$path" == */"$base"-* ]]; then
+    local suffix="${path#*/"$base"-}"
+    suffix="${suffix%%/*}"
+    echo "$alias-$suffix"; return 0
+  fi
+  return 1
+}
+
+alias_dir "$dir" "nix-config" "nix" && exit
+alias_dir "$dir" "courtyard-frontend" "cyfe" && exit
+
+case "$dir" in
+  /Users/stevedv) echo "~" ;;
+  *)              basename "$dir" ;;
 esac
