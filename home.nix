@@ -29,6 +29,7 @@
     gh
     git-crypt
     gnupg
+    pinentry_mac
     jq
     # kanata
     lazygit
@@ -359,6 +360,7 @@
             return $?
           fi
         }
+        export GPG_TTY=$(tty)
       ''
       (lib.mkOrder 950 ''
         # Rebind fzf cd widget from Alt+C to Ctrl+F (after fzf at 910)
@@ -448,14 +450,12 @@
 
   programs.gpg = {
     enable = true;
-    settings = {
-      pinentry-mode = "loopback";
-    };
   };
 
   home.file.".gnupg/gpg-agent.conf".text = ''
-    allow-loopback-pinentry
-    allow-preset-passphrase
+    pinentry-program ${pkgs.pinentry_mac}/Applications/pinentry-mac.app/Contents/MacOS/pinentry-mac
+    default-cache-ttl 34560000
+    max-cache-ttl 34560000
   '';
 
 }
