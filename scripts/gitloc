@@ -1,0 +1,37 @@
+#!/bin/bash
+# gitloc - Show lines of code changed (tracked + untracked) with colors
+
+GREEN='\033[32m'
+RED='\033[31m'
+RESET='\033[0m'
+
+{
+  # Tracked files (modified)
+  git diff --numstat HEAD | while read add del file; do
+    if [ "$del" -gt 0 ]; then
+      printf "%s|${GREEN}+%d${RESET} ${RED}-%d${RESET}\n" "$file" "$add" "$del"
+    else
+      printf "%s|${GREEN}+%d${RESET}\n" "$file" "$add"
+    fi
+  done
+
+  # Untracked files (new)
+  git ls-files --others --exclude-standard | while read file; do
+    lines=$(wc -l < "$file" | tr -d ' ')
+    printf "%s|${GREEN}+%d${RESET}\n" "$file" "$lines"
+  done
+} | column -t -s'|'
+
+# Summary
+echo ""
+echo "─────────────────────────"
+
+add_tracked=$(git diff --numstat HEAD | awk '{s+=$1} END {print s+0}')
+add_untracked=$(git ls-files --others --exclude-standard | xargs cat 2>/dev/null | wc -l | tr -d ' ')
+del_tracked=$(git diff --numstat HEAD | awk '{s+=$2} END {print s+0}')
+
+total_add=$((add_tracked + add_untracked))
+
+printf "Total: ${GREEN}+%d${RESET}" "$total_add"
+[ "$del_tracked" -gt 0 ] && printf " ${RED}-%d${RESET}" "$del_tracked"
+echo " lines"

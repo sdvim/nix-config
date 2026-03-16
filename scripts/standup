@@ -1,0 +1,124 @@
+#!/bin/bash
+# Show a summary of work activity from the last 24 hours
+
+set -euo pipefail
+
+# Check deps
+for cmd in gh jq; do
+  if ! command -v "$cmd" &>/dev/null; then
+    echo "Missing dependency: $cmd" >&2
+    exit 1
+  fi
+done
+
+# Colors
+bold='\033[1m'
+dim='\033[2m'
+reset='\033[0m'
+
+SINCE=$(date -v-1d +%Y-%m-%d)
+ME=$(gh api user --jq '.login' 2>/dev/null)
+
+# --- GitHub: authored PRs ---
+authored_json=$(gh search prs --author @me --updated ">$SINCE" \
+  --json number,title,state,isDraft,repository --limit 100 2>/dev/null || echo '[]')
+
+authored_lines=$(echo "$authored_json" | jq -r '
+  .[] | {
+    number,
+    title,
+    repo: .repository.nameWithOwner,
+    status: (
+      if .state == "merged" then "merged"
+      elif .state == "open" and .isDraft then "draft"
+      elif .state == "open" then "in review"
+      elif .state == "closed" then "closed"
+      else .state
+      end
+    )
+  } | "PR #\(.number)\t\(.title)\t\(.status)\t\(.repo)"
+')
+
+# --- GitHub: reviewed/commented PRs (excluding self-authored) ---
+reviewed_json=$(gh search prs --reviewed-by @me --updated ">$SINCE" \
+  --json number,title,state,isDraft,repository,author --limit 100 2>/dev/null || echo '[]')
+
+commented_json=$(gh search prs --commenter @me --updated ">$SINCE" \
+  --json number,title,state,isDraft,repository,author --limit 100 2>/dev/null || echo '[]')
+
+# Merge reviewed + commented, dedupe by repo+number, exclude self-authored
+reviewed_lines=$(echo "$reviewed_json"$'\n'"$commented_json" | jq -rs --arg me "$ME" '
+  [.[][] | select(.author.login != $me)]
+  | unique_by("\(.repository.nameWithOwner)#\(.number)")
+  | .[]
+  | "PR #\(.number)\t\(.title)\treviewed\t\(.repository.nameWithOwner)"
+')
+
+# --- Linear: completed issues ---
+linear_lines=""
+if [ -n "${LINEAR_API_KEY:-}" ]; then
+  since_iso="${SINCE}T00:00:00.000Z"
+  linear_response=$(curl -s -X POST https://api.linear.app/graphql \
+    -H "Content-Type: application/json" \
+    -H "Authorization: $LINEAR_API_KEY" \
+    -d "{\"query\": \"{ viewer { assignedIssues(filter: { completedAt: { gte: \\\"$since_iso\\\" } }) { nodes { identifier title state { name } } } } }\"}" \
+    2>/dev/null || echo '{}')
+
+  linear_lines=$(echo "$linear_response" | jq -r '
+    .data.viewer.assignedIssues.nodes // []
+    | .[]
+    | "\(.identifier)\t\(.title)\t\(.state.name)"
+  ' 2>/dev/null || true)
+else
+  linear_skip=1
+fi
+
+# --- Dedup: extract Linear identifiers from PR titles ---
+all_pr_lines="${authored_lines}${authored_lines:+$'\n'}${reviewed_lines}"
+linked_ids=$(echo "$all_pr_lines" | grep -oE '[A-Z]+-[0-9]+' | sort -u || true)
+
+if [ -n "$linear_lines" ] && [ -n "$linked_ids" ]; then
+  filtered_linear=""
+  while IFS= read -r line; do
+    id=$(echo "$line" | cut -f1)
+    if ! echo "$linked_ids" | grep -qx "$id"; then
+      filtered_linear="${filtered_linear}${filtered_linear:+$'\n'}${line}"
+    fi
+  done <<< "$linear_lines"
+  linear_lines="$filtered_linear"
+fi
+
+# --- Output ---
+echo -e "${bold}Daily Summary (last 24h)${reset}"
+echo "────────────────────────"
+
+has_output=0
+
+if [ -n "$authored_lines" ]; then
+  while IFS=$'\t' read -r pr title status repo; do
+    echo -e "  ${dim}-${reset} ${bold}${pr}${reset} - ${title} - ${dim}${status}${reset}"
+    has_output=1
+  done <<< "$authored_lines"
+fi
+
+if [ -n "$reviewed_lines" ]; then
+  while IFS=$'\t' read -r pr title status repo; do
+    echo -e "  ${dim}-${reset} ${bold}${pr}${reset} - ${title} - ${dim}${status}${reset}"
+    has_output=1
+  done <<< "$reviewed_lines"
+fi
+
+if [ -n "$linear_lines" ]; then
+  while IFS=$'\t' read -r id title status; do
+    echo -e "  ${dim}-${reset} ${bold}${id}${reset} - ${title} - ${dim}${status}${reset}"
+    has_output=1
+  done <<< "$linear_lines"
+fi
+
+if [ "${linear_skip:-}" = "1" ]; then
+  echo -e "  ${dim}(Linear skipped — LINEAR_API_KEY not set)${reset}"
+fi
+
+if [ "$has_output" = "0" ] && [ "${linear_skip:-}" != "1" ]; then
+  echo "  No activity found"
+fi

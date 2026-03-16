@@ -1,0 +1,18 @@
+#!/bin/bash
+# gcert - Check GPG signing status, prompt if inactive
+
+f=~/.gpg_last_sign
+
+if echo test | gpg -s --batch -o /dev/null 2>/dev/null; then
+  [[ -f "$f" ]] || touch "$f"
+  secs=$(($(date +%s) - $(stat -f %m "$f")))
+  if [[ $secs -lt 60 ]]; then t="just now"
+  elif [[ $secs -lt 3600 ]]; then t="$((secs/60))m ago"
+  elif [[ $secs -lt 86400 ]]; then t="$((secs/3600))h ago"
+  else t="$((secs/86400))d ago"
+  fi
+  echo "GPG active (signed $t)"
+else
+  echo "GPG inactive, prompting..."
+  echo test | gpg -s -o /dev/null && touch "$f" && echo "GPG now active"
+fi

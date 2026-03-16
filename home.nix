@@ -136,6 +136,21 @@
     source = ./scripts/sesh-picker;
   };
 
+  home.file.".local/bin/gcert" = {
+    executable = true;
+    source = ./scripts/gcert;
+  };
+
+  home.file.".local/bin/standup" = {
+    executable = true;
+    source = ./scripts/standup;
+  };
+
+  home.file.".local/bin/gitloc" = {
+    executable = true;
+    source = ./scripts/gitloc;
+  };
+
   home.activation.installGitHooks = config.lib.dag.entryAfter [ "writeBoundary" ] ''
     hooks_dir="$HOME/nix-config/.git/hooks"
     hook_src="$HOME/nix-config/hooks/pre-push"
