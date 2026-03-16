@@ -167,6 +167,7 @@
     auto_update = true
   '';
 
+  home.file.".config/aerospace/aerospace.toml".source = ./config/aerospace/aerospace.toml;
   home.file.".config/kanata/kanata.kbd".source = ./config/kanata/kanata.kbd;
   home.file.".config/ghostty/config".source = ./config/ghostty/config;
   home.file.".config/nvim".source =

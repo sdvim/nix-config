@@ -1,0 +1,91 @@
+# AeroSpace Config
+# Docs: https://nikitabobko.github.io/AeroSpace/guide
+
+config-version = 2
+
+# Start at login
+start-at-login = true
+
+# Normalizations
+enable-normalization-flatten-containers = true
+enable-normalization-opposite-orientation-for-nested-containers = true
+
+# Layout defaults - horizontal tiles (new windows add as columns)
+default-root-container-layout = 'tiles'
+default-root-container-orientation = 'horizontal'
+
+# Accordion padding (only used if you switch to accordion mode)
+accordion-padding = 30
+
+# Mouse follows focus when monitor changes
+on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
+
+# Workspaces: P (personal), W (work), G on primary; T (terminals) on secondary
+persistent-workspaces = ['P', 'W', 'G', 'T']
+
+# Assign workspaces to monitors
+# Primary (5K) gets personal/work, Secondary (ultrawide) gets terminals
+[workspace-to-monitor-force-assignment]
+P = 'main'
+W = 'main'
+G = 'main'
+T = 'secondary'
+
+[key-mapping]
+preset = 'qwerty'
+
+[gaps]
+inner.horizontal = 10
+inner.vertical = 10
+outer.left = 0
+outer.bottom = 0
+outer.top = 0
+outer.right = 0
+
+[mode.main.binding]
+# Layout toggles
+alt-slash = 'layout tiles horizontal vertical'
+alt-comma = 'layout accordion horizontal vertical'
+
+# Focus left/right - crosses monitor boundaries, wraps around
+alt-leftSquareBracket = 'focus --boundaries all-monitors-outer-frame --boundaries-action wrap-around-all-monitors left'
+alt-rightSquareBracket = 'focus --boundaries all-monitors-outer-frame --boundaries-action wrap-around-all-monitors right'
+
+# Move windows left/right
+alt-shift-leftSquareBracket = 'move left'
+alt-shift-rightSquareBracket = 'move right'
+
+# Resize
+alt-minus = 'resize smart -50'
+alt-equal = 'resize smart +50'
+
+# Workspaces
+alt-1 = 'workspace P'
+alt-2 = 'workspace W'
+alt-3 = 'workspace G'
+alt-backtick = 'workspace T'
+
+# Move window to workspace
+alt-shift-1 = 'move-node-to-workspace P'
+alt-shift-2 = 'move-node-to-workspace W'
+alt-shift-3 = 'move-node-to-workspace G'
+alt-shift-backtick = 'move-node-to-workspace T'
+
+# Quick workspace switching
+alt-tab = 'workspace-back-and-forth'
+alt-shift-tab = 'move-workspace-to-monitor --wrap-around next'
+
+# App launchers
+alt-g = 'exec-and-forget open -a Ghostty'
+alt-h = 'exec-and-forget open -a Helium'
+
+# Service mode
+alt-shift-semicolon = 'mode service'
+
+[mode.service.binding]
+esc = ['reload-config', 'mode main']
+r = ['flatten-workspace-tree', 'mode main']
+f = ['layout floating tiling', 'mode main']
+backspace = ['close-all-windows-but-current', 'mode main']
+alt-shift-leftSquareBracket = ['join-with left', 'mode main']
+alt-shift-rightSquareBracket = ['join-with right', 'mode main']
