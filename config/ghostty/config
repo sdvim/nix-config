@@ -4,9 +4,7 @@ font-family = JetBrainsMono Nerd Font
 # Start in fullscreen
 fullscreen = true
 
-# Pure black background with a dark theme base
-theme = Builtin Tango Dark
-background = 000000
+theme = GitHub Dark High Contrast
 
 # Hide tab bar entirely
 window-show-tab-bar = never
