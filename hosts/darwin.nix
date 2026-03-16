@@ -58,12 +58,6 @@
           gregorian = 2;
         };
       };
-      "net.imput.helium" = {
-        ExtensionInstallForcelist = [
-          "dbepggeogbaibhgnhhndojpepiihcmeb;https://clients2.google.com/service/update2/crx"
-          "aeblfdkhhhdcdjpifhhbdiojplfjncoa;https://clients2.google.com/service/update2/crx"
-        ];
-      };
     };
 
     dock = {

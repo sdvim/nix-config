@@ -49,3 +49,11 @@ Font files in `fonts/` are encrypted. After cloning:
 ```bash
 git-crypt unlock  # requires GPG key 333487C4FFB88C8D
 ```
+
+## Manual Steps
+
+Some setup can't be automated through Nix. On a fresh machine:
+
+1. **1Password → Helium** — Connect Helium as a browser in 1Password (Settings → Browser → Add Browser → select Helium.app)
+2. **Helium extensions** — Install [Vimium](https://chromewebstore.google.com/detail/vimium/dbepggeogbaibhgnhhndojpepiihcmeb) and [1Password](https://chromewebstore.google.com/detail/1password-–-password-mana/aeblfdkhhhdcdjpifhhbdiojplfjncoa) extensions
+3. **Helium web apps** — Install Google Meet as an app via Helium
