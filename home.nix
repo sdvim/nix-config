@@ -177,11 +177,11 @@
     auto_update = true
   '';
 
-  home.file.".config/aerospace/aerospace.toml".text =
-    lib.mkDefault (builtins.readFile ./config/aerospace/aerospace.toml);
+  home.file.".config/aerospace/aerospace.toml".text = lib.mkDefault (
+    builtins.readFile ./config/aerospace/aerospace.toml
+  );
   home.file.".config/kanata/kanata.kbd".source = ./config/kanata/kanata.kbd;
-  home.file.".config/ghostty/config".text =
-    lib.mkDefault (builtins.readFile ./config/ghostty/config);
+  home.file.".config/ghostty/config".text = lib.mkDefault (builtins.readFile ./config/ghostty/config);
   home.file.".config/nvim".source =
     config.lib.file.mkOutOfStoreSymlink "/Users/stevedv/nix-config/config/nvim";
 
