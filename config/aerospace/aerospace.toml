@@ -77,7 +77,6 @@ alt-shift-tab = 'move-workspace-to-monitor --wrap-around next'
 
 # App launchers
 alt-g = 'exec-and-forget open -a Ghostty'
-alt-h = 'exec-and-forget open -a Helium'
 
 # Service mode
 alt-shift-semicolon = 'mode service'
