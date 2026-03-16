@@ -125,6 +125,7 @@
       "codex"
       "ghostty"
       "helium-browser"
+      "homerow"
       "obsidian"
       "zed"
       # "karabiner-elements"  # requires interactive sudo for pkg install

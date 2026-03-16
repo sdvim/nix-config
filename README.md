@@ -56,4 +56,5 @@ Some setup can't be automated through Nix. On a fresh machine:
 
 1. **1Password → Helium** — Connect Helium as a browser in 1Password (Settings → Browser → Add Browser → select Helium.app)
 2. **Helium extensions** — Install [Vimium](https://chromewebstore.google.com/detail/vimium/dbepggeogbaibhgnhhndojpepiihcmeb) and [1Password](https://chromewebstore.google.com/detail/1password-–-password-mana/aeblfdkhhhdcdjpifhhbdiojplfjncoa) extensions
-3. **Helium web apps** — Install Google Meet as an app via Helium
+3. **Vimium settings** — Open the [Vimium options page](chrome-extension://dbepggeogbaibhgnhhndojpepiihcmeb/pages/options.html), scroll to the bottom, click "Show Advanced Options", then "Backup and Restore" → import from `config/vimium/vimium-options.json`
+4. **Helium web apps** — Install Google Meet as an app via Helium

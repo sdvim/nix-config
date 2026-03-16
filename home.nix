@@ -46,6 +46,7 @@
     turbo
     vhs
     yarn
+    zsh-completions
     # codex installed via homebrew cask
   ];
 
