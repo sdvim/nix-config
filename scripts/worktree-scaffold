@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  echo "Usage: worktree-scaffold <repo-path> <suffix1> [suffix2] ..."
+  echo ""
+  echo "Creates git worktrees for each suffix, branching from the main branch."
+  echo ""
+  echo "Example:"
+  echo "  worktree-scaffold ~/Git/courtyard-frontend aaa bbb ccc"
+  echo ""
+  echo "Creates:"
+  echo "  ~/Git/courtyard-frontend-aaa on branch main-aaa"
+  echo "  ~/Git/courtyard-frontend-bbb on branch main-bbb"
+  echo "  ~/Git/courtyard-frontend-ccc on branch main-ccc"
+  exit 1
+}
+
+if [[ $# -lt 2 ]]; then
+  usage
+fi
+
+repo_path="$(cd "$1" && pwd)"
+shift
+suffixes=("$@")
+
+if ! git -C "$repo_path" rev-parse --git-dir &>/dev/null; then
+  echo "Error: '$repo_path' is not a git repository" >&2
+  exit 1
+fi
+
+basename="$(basename "$repo_path")"
+parent="$(dirname "$repo_path")"
+
+# Detect main branch
+main_branch=""
+for candidate in main master; do
+  if git -C "$repo_path" rev-parse --verify "$candidate" &>/dev/null; then
+    main_branch="$candidate"
+    break
+  fi
+done
+
+if [[ -z "$main_branch" ]]; then
+  echo "Error: could not detect main branch (tried 'main' and 'master')" >&2
+  exit 1
+fi
+
+echo "Repo: $repo_path"
+echo "Main branch: $main_branch"
+echo ""
+
+created=()
+
+for suffix in "${suffixes[@]}"; do
+  target_dir="$parent/$basename-$suffix"
+  branch="$main_branch-$suffix"
+
+  if [[ -d "$target_dir" ]]; then
+    echo "Skipping '$suffix': $target_dir already exists"
+    continue
+  fi
+
+  # Check if worktree is already registered for this path
+  if git -C "$repo_path" worktree list --porcelain | grep -q "worktree $target_dir"; then
+    echo "Skipping '$suffix': worktree already registered for $target_dir"
+    continue
+  fi
+
+  echo "Creating worktree: $target_dir (branch: $branch)"
+  if git -C "$repo_path" rev-parse --verify "$branch" &>/dev/null; then
+    # Branch exists, reuse it
+    if ! git -C "$repo_path" worktree add "$target_dir" "$branch" 2>&1; then
+      echo "Error: failed to create worktree for '$suffix', skipping" >&2
+      continue
+    fi
+  else
+    # Create new branch
+    if ! git -C "$repo_path" worktree add "$target_dir" -b "$branch" 2>&1; then
+      echo "Error: failed to create worktree for '$suffix', skipping" >&2
+      continue
+    fi
+  fi
+
+  if [[ -f "$target_dir/yarn.lock" ]]; then
+    echo "Running yarn install in $target_dir..."
+    (cd "$target_dir" && yarn install)
+  fi
+
+  created+=("$target_dir")
+done
+
+echo ""
+if [[ ${#created[@]} -gt 0 ]]; then
+  echo "Created ${#created[@]} worktree(s):"
+  for dir in "${created[@]}"; do
+    echo "  $dir"
+  done
+else
+  echo "No new worktrees created."
+fi
