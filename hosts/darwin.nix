@@ -74,10 +74,14 @@
 
     finder = {
       AppleShowAllExtensions = true;
+      AppleShowAllFiles = true;
       FXPreferredViewStyle = "clmv";
+      NewWindowTarget = "Other";
+      NewWindowTargetPath = "file:///Users/stevedv/Downloads";
       ShowPathbar = true;
       ShowStatusBar = true;
       _FXShowPosixPathInTitle = true;
+      _FXSortFoldersFirst = true;
     };
 
     NSGlobalDomain = {
