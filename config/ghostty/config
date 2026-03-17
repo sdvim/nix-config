@@ -25,7 +25,6 @@ keybind = super+left=text:\x01
 keybind = super+right=text:\x05
 keybind = alt+left=text:\x1b[1;3D
 keybind = alt+right=text:\x1b[1;3C
-keybind = super+shift+comma=text:\x02\x3a new-window -n config "nvim ~/nix-config/config/ghostty/config"\x0d
 keybind = super+shift+/=text:\x02?
 keybind = super+ctrl+f=toggle_fullscreen
 keybind = super+q=quit
