@@ -80,7 +80,7 @@
     undo = "git reset HEAD~1";
     wip = "git add . && git commit -m 'WIP'";
 
-    c = "claude --dangerously-skip-permissions --permission-mode plan";
+    c = "claude --allow-dangerously-skip-permissions --permission-mode plan";
     cx = "codex --dangerously-bypass-approvals-and-sandbox";
   };
 
