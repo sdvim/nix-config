@@ -69,7 +69,6 @@ if ! $host_valid; then
 fi
 
 FLAKE_DIR="$(cd "$(dirname "$0")" && pwd)"
-FLAKE_REF="$FLAKE_DIR#$HOST"
 
 # Colors
 bold='\033[1m'
@@ -90,6 +89,34 @@ ask() {
 info()  { printf "${green}>>>${reset} %s\n" "$1"; }
 warn()  { printf "${yellow}>>>${reset} %s\n" "$1"; }
 skip()  { printf "    Skipped.\n"; }
+
+# ──────────────────────────────────────────────
+# Repo location migration
+# ──────────────────────────────────────────────
+EXPECTED_DIR="$(sed -n 's/.*flakeDir = "\(.*\)";/\1/p' "$FLAKE_DIR/flake.nix")"
+if [[ -n "$EXPECTED_DIR" && "$FLAKE_DIR" != "$EXPECTED_DIR" ]]; then
+  warn "Repo is at $FLAKE_DIR but flake.nix expects $EXPECTED_DIR"
+  if ask "Move repo to $EXPECTED_DIR?"; then
+    mkdir -p "$(dirname "$EXPECTED_DIR")"
+    mv "$FLAKE_DIR" "$EXPECTED_DIR"
+    info "Moved to $EXPECTED_DIR"
+
+    # Migrate Claude Code sessions to the new project path
+    OLD_CLAUDE_DIR="$HOME/.claude/projects/$(echo "$FLAKE_DIR" | tr '/' '-')"
+    NEW_CLAUDE_DIR="$HOME/.claude/projects/$(echo "$EXPECTED_DIR" | tr '/' '-')"
+    if [[ -d "$OLD_CLAUDE_DIR" ]]; then
+      mkdir -p "$NEW_CLAUDE_DIR"
+      cp -rn "$OLD_CLAUDE_DIR"/ "$NEW_CLAUDE_DIR"/
+      info "Migrated Claude Code sessions to $NEW_CLAUDE_DIR"
+    fi
+
+    exec bash "$EXPECTED_DIR/setup.sh" "$@"
+  else
+    skip
+  fi
+fi
+
+FLAKE_REF="$FLAKE_DIR#$HOST"
 
 info "Setting up host: $HOST"
 
