@@ -1,19 +1,24 @@
-_: {
-  # Mini: focus Ghostty via AeroSpace (dedicated fullscreen monitor)
+{ lib, ... }:
+{
+  system.keyboard.swapLeftCommandAndLeftAlt = true;
+
+  # Focus Ghostty via AeroSpace (dedicated fullscreen monitor)
   home-manager.users.stevedv.home.file.".config/aerospace/aerospace.toml".text =
     builtins.readFile ../config/aerospace/aerospace.toml
     + ''
 
-      # Focus Ghostty window (mini has a dedicated fullscreen monitor)
+      # Focus Ghostty window (desktop has a dedicated fullscreen monitor)
       ctrl-quote = 'exec-and-forget open -a Ghostty'
     '';
-
-  system.keyboard.swapLeftCommandAndLeftAlt = true;
 
   # Wake-on-LAN
   networking.wakeOnLan.enable = true;
 
-  # 34" ultrawide (inverted 180°) above 27" primary, horizontally centered
+  homebrew.brews = [
+    "displayplacer"
+  ];
+
+  # Mini's display layout (other desktops override via lib.mkForce or host modules)
   launchd.agents.display-config = {
     serviceConfig = {
       Label = "org.displayplacer.config";
@@ -29,7 +34,7 @@ _: {
   };
 
   # Enable remote access services (SSH, Screen Sharing, File Sharing)
-  system.activationScripts.postActivation.text = ''
+  system.activationScripts.postActivation.text = lib.mkAfter ''
     # Remote Login (SSH)
     launchctl enable system/com.openssh.sshd
     launchctl bootstrap system /System/Library/LaunchDaemons/ssh.plist 2>/dev/null || true

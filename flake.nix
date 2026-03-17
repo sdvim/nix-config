@@ -29,7 +29,7 @@
         {
           hostName,
           computerName,
-          hostModules ? [ ],
+          roles ? [ ],
         }:
         nix-darwin.lib.darwinSystem {
           modules = [
@@ -41,7 +41,7 @@
               networking.localHostName = hostName;
             }
           ]
-          ++ hostModules
+          ++ roles
           ++ [
             home-manager.darwinModules.home-manager
             {
@@ -67,13 +67,25 @@
       darwinConfigurations."air" = mkHost {
         hostName = "air";
         computerName = "Steve's Macbook";
-        hostModules = [ ./hosts/air.nix ];
+        roles = [ ./roles/laptop.nix ];
       };
 
       darwinConfigurations."mini" = mkHost {
         hostName = "mini";
         computerName = "Steve's Mac Mini";
-        hostModules = [ ./hosts/mini.nix ];
+        roles = [
+          ./roles/desktop.nix
+          ./roles/homelab.nix
+        ];
+      };
+
+      darwinConfigurations."pro" = mkHost {
+        hostName = "pro";
+        computerName = "Steve's Macbook Pro";
+        roles = [
+          ./roles/desktop.nix
+          ./roles/work.nix
+        ];
       };
     };
 }

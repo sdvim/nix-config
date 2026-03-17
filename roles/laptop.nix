@@ -1,5 +1,10 @@
 _: {
-  # Air: quick terminal via Ghostty (ctrl+')
+  system.defaults.trackpad = {
+    Clicking = true;
+    TrackpadRightClick = true;
+  };
+
+  # Quick terminal via Ghostty (ctrl+')
   home-manager.users.stevedv.home.file.".config/ghostty/config".text =
     builtins.readFile ../config/ghostty/config
     + ''

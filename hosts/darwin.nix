@@ -95,11 +95,6 @@
       NSAutomaticSpellingCorrectionEnabled = false;
     };
 
-    trackpad = {
-      Clicking = true;
-      TrackpadRightClick = true;
-    };
-
     screencapture = {
       location = "~/Screenshots";
       type = "png";
@@ -114,13 +109,9 @@
     taps = [
       "nikitabobko/tap"
     ];
-    brews = [
-      "cocoapods"
-      "displayplacer"
-    ];
+    brews = [ ];
     casks = [
       "nikitabobko/tap/aerospace"
-      "android-studio"
       "1password"
       "codex"
       "ghostty"
