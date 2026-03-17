@@ -1,15 +1,6 @@
-{ lib, userName, ... }:
+{ lib, ... }:
 {
   system.keyboard.swapLeftCommandAndLeftAlt = true;
-
-  # Focus Ghostty via AeroSpace (dedicated fullscreen monitor)
-  home-manager.users.${userName}.home.file.".config/aerospace/aerospace.toml".text =
-    builtins.readFile ../config/aerospace/aerospace.toml
-    + ''
-
-      # Focus Ghostty window (desktop has a dedicated fullscreen monitor)
-      ctrl-quote = 'exec-and-forget open -a Ghostty'
-    '';
 
   # Wake-on-LAN
   networking.wakeOnLan.enable = true;
