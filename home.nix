@@ -380,7 +380,7 @@
     enable = true;
     enableZshIntegration = true;
     settings = {
-      format = "$directory$git_branch$git_status\${env_var.CLAUDE_CONTEXT}\${env_var.CLAUDE_SESSION}$character";
+      format = "$directory$git_branch$git_status\${env_var.CLAUDE_CONTEXT}$character";
       right_format = "$cmd_duration";
 
       character = {
@@ -420,11 +420,6 @@
           style = "yellow";
         };
 
-        CLAUDE_SESSION = {
-          variable = "CLAUDE_SESSION";
-          format = "[$env_value]($style)";
-          style = "purple";
-        };
       };
     };
   };
