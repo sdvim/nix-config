@@ -34,7 +34,9 @@
     lazygit
     lua5_1
     luarocks
+    mermaid-cli
     neovim
+    nodePackages.neovim
     nodejs_24
     pnpm
     ripgrep
@@ -45,6 +47,7 @@
     tree-sitter
     turbo
     vhs
+    wget
     yarn
     zsh-completions
     # codex installed via homebrew cask
@@ -64,6 +67,7 @@
 
   home.shellAliases = {
     rebuild = "sudo darwin-rebuild switch --flake ${flakeDir}#$(hostname -s) && source ~/.zshrc && tmux source-file ~/.tmux.conf 2>/dev/null; aerospace reload-config 2>/dev/null; ghostty +reload-config 2>/dev/null; true";
+    reload = "source ~/.zshrc";
 
     g = "git";
     ga = "git add .";
@@ -74,13 +78,14 @@
     gcom = "git checkout main --ignore-other-worktrees";
     gf = "git fetch --prune";
     gl = "git log --pretty=format:'%C(yellow)%h%C(reset)%C(red)%d%C(reset)%n%C(cyan)%ar%C(reset) %C(green)<%an>%C(reset)%n%s%n' --no-merges --max-count 5";
-    gp = "git pull";
-    gpush = "git push";
+    gpom = "git pull origin main";
+    gp = "git push";
     gr = "git rebase";
     grom = "git rebase origin/main";
     gs = "git status -s";
     undo = "git reset HEAD~1";
     wip = "git add . && git commit -m 'WIP'";
+    rwt = "suffix=$(basename \"$(pwd)\" | sed 's/.*-//') && git checkout \"main-$suffix\" && git pull origin main && git fetch --prune";
 
     c = "claude --allow-dangerously-skip-permissions --permission-mode plan";
     cx = "codex --dangerously-bypass-approvals-and-sandbox";
@@ -128,6 +133,81 @@
     source = ./scripts/tmux-claude-next;
   };
 
+  home.file.".local/bin/tmux-move-pane-prev-session" = {
+    executable = true;
+    source = pkgs.writeShellScript "tmux-move-pane-prev-session" ''
+      set -euo pipefail
+
+      tmux_bin=/etc/profiles/per-user/${userName}/bin/tmux
+      current_session="''${1:-}"
+      pane_id="''${2:-}"
+      current_client_tty="''${3:-}"
+      current_window_id="''${4:-}"
+
+      if [ -z "$current_session" ] || [ -z "$pane_id" ] || [ -z "$current_client_tty" ] || [ -z "$current_window_id" ]; then
+        "$tmux_bin" display-message "Missing tmux pane/session context"
+        exit 1
+      fi
+
+      session_index() {
+        case "$1" in
+          main)
+            echo 0
+            ;;
+          main-*)
+            local suffix="''${1#main-}"
+            if [[ "$suffix" =~ ^[0-9]+$ ]]; then
+              echo "$suffix"
+            else
+              echo -1
+            fi
+            ;;
+          *)
+            echo -1
+            ;;
+        esac
+      }
+
+      current_index="$(session_index "$current_session")"
+      target_session=""
+      best_index=-1
+
+      while IFS= read -r session_name; do
+        idx="$(session_index "$session_name")"
+        if [ "$idx" -ge 0 ] && [ "$idx" -lt "$current_index" ] && [ "$idx" -gt "$best_index" ]; then
+          best_index="$idx"
+          target_session="$session_name"
+        fi
+      done < <("$tmux_bin" list-sessions -F '#{session_name}')
+
+      if [ -z "$target_session" ]; then
+        "$tmux_bin" display-message "No previous tmux session"
+        exit 0
+      fi
+
+      target_client_tty="$(
+        "$tmux_bin" list-clients -F '#{client_tty}	#{session_name}' \
+          | awk -F '	' -v current_tty="$current_client_tty" -v target="$target_session" '
+              $1 != current_tty && $2 == target {
+                print $1
+                exit
+              }
+            '
+      )"
+
+      if [ -n "$target_client_tty" ]; then
+        "$tmux_bin" switch-client -c "$target_client_tty" -t "$current_session"
+      fi
+
+      target_window_id="$("$tmux_bin" display-message -p -t "$target_session" '#{window_id}')"
+
+      "$tmux_bin" move-pane -s "$pane_id" -t "$target_session"
+      "$tmux_bin" select-layout -t "$target_window_id" even-horizontal >/dev/null 2>&1 || true
+      "$tmux_bin" select-layout -t "$current_window_id" even-horizontal >/dev/null 2>&1 || true
+      "$tmux_bin" switch-client -t "$target_session"
+    '';
+  };
+
   home.file.".local/bin/gcert" = {
     executable = true;
     source = ./scripts/gcert;
@@ -166,6 +246,21 @@
   home.file.".local/bin/tmux-responsive-layout" = {
     executable = true;
     source = ./scripts/tmux-responsive-layout;
+  };
+
+  home.file.".local/bin/aerospace-terminal-toggle" = {
+    executable = true;
+    source = ./scripts/aerospace-terminal-toggle;
+  };
+
+  home.file.".local/bin/aerospace-workspace-caps" = {
+    executable = true;
+    source = ./scripts/aerospace-workspace-caps;
+  };
+
+  home.file.".local/bin/ci" = {
+    executable = true;
+    source = ./scripts/ci;
   };
 
   home.activation.installGitHooks = config.lib.dag.entryAfter [ "writeBoundary" ] ''
@@ -292,11 +387,17 @@
     # View live tmux-cmd output (shown as hint after 10s)
     bind-key W new-window -n "task" "tail -f /tmp/tmux-cmd-live"
 
-    # View last tmux-cmd error log
-    bind-key R new-window -n "error" "less -R /tmp/tmux-cmd-last-error"
+    # Open GitHub PR for current branch in browser (cmd+r via Ghostty)
+    bind-key R run-shell -b "cd '#{pane_current_path}' && gh pr view --web 2>/dev/null || tmux display-message 'No PR found for this branch'"
+
+    # Open PR on devinreview.com (cmd+shift+r via Ghostty)
+    bind-key -n M-R run-shell -b "cd '#{pane_current_path}' && url=$(gh pr view --json url -q .url 2>/dev/null | sed 's|github.com|devinreview.com|') && [ -n \"$url\" ] && open \"$url\" || tmux display-message 'No PR found for this branch'"
 
     # Jump to next waiting Claude pane (prefix + G)
     bind-key G run-shell "$HOME/.local/bin/tmux-claude-next"
+
+    # Move current pane to previous tmux session and follow it
+    bind-key M run-shell -b "$HOME/.local/bin/tmux-move-pane-prev-session '#{session_name}' '#{pane_id}' '#{client_tty}' '#{window_id}'"
 
     # Keybinding cheatsheet (cmd+shift+? via Ghostty)
     bind-key ? display-popup -E -w 80% -h 80% "$HOME/.local/bin/keybindings-help"
@@ -391,7 +492,7 @@
     enable = true;
     enableZshIntegration = true;
     settings = {
-      format = "$directory$git_branch$git_status\${env_var.CLAUDE_CONTEXT}$character";
+      format = "$directory$git_branch$git_status\${env_var.CLAUDE_CONTEXT}\${env_var.CI_STATUS}$character";
       right_format = "$cmd_duration";
 
       character = {
@@ -431,6 +532,11 @@
           style = "yellow";
         };
 
+        CI_STATUS = {
+          variable = "CI_STATUS";
+          format = "$env_value ";
+          style = "";
+        };
       };
     };
   };

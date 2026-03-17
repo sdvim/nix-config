@@ -50,17 +50,15 @@ stale=false
 [ -n "$pr_head" ] && [ "$pr_head" != "$local_head" ] && stale=true
 
 # Determine compact status for cache
-if [ "$total" -eq 0 ]; then
-  cache_out=""
-elif [ "$fail_count" -gt 0 ]; then
-  fail_names=$(echo "$checks" | jq -r "[.[] | select($fail_sel) | .name] | .[0:2] | join(\", \")")
-  cache_out=$(printf "${red}✗ %s${reset}" "$fail_names")
-elif [ "$pend_count" -gt 0 ]; then
-  cache_out=$(printf "${yellow}⏳ %d/%d${reset}" "$pend_count" "$total")
-elif $stale; then
-  cache_out=$(printf "${green}✓${reset}\033[2m?${reset}")
-else
-  cache_out=$(printf "${green}✓ CI${reset}")
+pass_count=$((total - fail_count - pend_count))
+cache_out=""
+if [ "$total" -gt 0 ]; then
+  parts=()
+  [ "$fail_count" -gt 0 ] && parts+=("$(printf "${red}✗%d${reset}" "$fail_count")")
+  [ "$pass_count" -gt 0 ] && parts+=("$(printf "${green}✓%d${reset}" "$pass_count")")
+  [ "$pend_count" -gt 0 ] && parts+=("$(printf "${yellow}?%d${reset}" "$pend_count")")
+  cache_out=$(IFS=' '; echo "${parts[*]}")
+  $stale && cache_out="${cache_out}\033[2m~\033[0m"
 fi
 printf "%s" "$cache_out" > /tmp/ci-status-cache
 

@@ -10,6 +10,7 @@ cat <<'EOF' | less -R
   cmd+c             Copy
   cmd+v             Paste
   cmd+q             Quit
+  ctrl+'            Terminal workspace toggle
   cmd+ctrl+f        Toggle fullscreen
   shift+enter       Send shift+enter (CSI u)
 
@@ -36,6 +37,8 @@ cat <<'EOF' | less -R
   cmd+shift+0-9     Select window by number
   cmd+shift+[       Previous window
   cmd+shift+]       Next window
+  cmd+`             Next Ghostty window
+  cmd+shift+`       Move pane → previous tmux session
   ctrl+tab          Next window
   ctrl+shift+tab    Previous window
 
@@ -44,9 +47,9 @@ cat <<'EOF' | less -R
   cmd+k             Clear scrollback
   cmd+n             New session (new window)
   cmd+shift+n       Move pane → new session
-  cmd+`             Next window
+  cmd+r             Open PR in browser
+  cmd+shift+r       Open PR in browser (Devin)
   prefix W          View task output
-  prefix R          View last error log
   CONFIG
   ───────────────────────────────────────────
   cmd+shift+<       Edit ghostty config

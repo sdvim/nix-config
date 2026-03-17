@@ -30,8 +30,11 @@ keybind = super+ctrl+f=toggle_fullscreen
 keybind = super+q=quit
 keybind = super+k=text:\x02K
 keybind = super+n=new_window
-keybind = super+grave_accent=text:\x02n
+keybind = super+grave_accent=goto_window:next
+keybind = super+shift+grave_accent=text:\x02M
 keybind = super+g=text:\x02G
+keybind = super+r=text:\x02R
+keybind = super+shift+r=text:\x02\x1bR
 
 # Tmux panes (select by number)
 keybind = super+t=text:\x02c
@@ -74,15 +77,8 @@ keybind = super+shift+enter=text:\x02z
 # Shift+enter sends CSI 13;2u (kitty protocol) for apps like Claude Code
 keybind = shift+enter=text:\x1b[13;2u
 
-# Don't open a window on launch (use quick terminal instead)
-initial-window = false
+# Open a normal window on launch
+initial-window = true
 
 # Launch into tmux
 command = /Users/stevedv/.local/bin/tmux-session
-
-# Quick terminal (ctrl+')
-keybind = global:ctrl+apostrophe=toggle_quick_terminal
-quick-terminal-position = top
-quick-terminal-size = 100%
-quick-terminal-autohide = true
-quick-terminal-animation-duration = 0
