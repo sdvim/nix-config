@@ -29,7 +29,7 @@ keybind = super+shift+/=text:\x02?
 keybind = super+ctrl+f=toggle_fullscreen
 keybind = super+q=quit
 keybind = super+k=text:\x02K
-keybind = super+n=text:\x02N
+keybind = super+n=new_window
 keybind = super+grave_accent=text:\x02n
 keybind = super+g=text:\x02G
 
@@ -74,12 +74,15 @@ keybind = super+shift+enter=text:\x02z
 # Shift+enter sends CSI 13;2u (kitty protocol) for apps like Claude Code
 keybind = shift+enter=text:\x1b[13;2u
 
+# Don't open a window on launch (use quick terminal instead)
+initial-window = false
+
 # Launch into tmux
 command = /Users/stevedv/.local/bin/tmux-session
 
 # Quick terminal (ctrl+')
 keybind = global:ctrl+apostrophe=toggle_quick_terminal
-quick-terminal-position = center
+quick-terminal-position = top
 quick-terminal-size = 100%
 quick-terminal-autohide = true
 quick-terminal-animation-duration = 0

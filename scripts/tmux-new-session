@@ -1,0 +1,7 @@
+#!/bin/bash
+# Open a new Ghostty window. Ghostty's `command` config invokes tmux-session,
+# which handles deterministic session naming.
+set -euo pipefail
+open -n -a Ghostty.app --args \
+  --quit-after-last-window-closed \
+  --fullscreen=true
