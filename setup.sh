@@ -6,7 +6,20 @@ set -e
 # ──────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
 if [[ ! -f "$SCRIPT_DIR/flake.nix" ]]; then
-  FLAKE_DIR="$HOME/nix-config"
+  # Detect username
+  USER_NAME="$(whoami)"
+  printf "Username for nix config? [%s] " "$USER_NAME"
+  read -r input
+  USER_NAME="${input:-$USER_NAME}"
+
+  # Detect git directory
+  printf "Where should repos live? [~/Git] "
+  read -r GIT_DIR
+  GIT_DIR="${GIT_DIR:-$HOME/Git}"
+  GIT_DIR="${GIT_DIR/#\~/$HOME}"
+  mkdir -p "$GIT_DIR"
+
+  FLAKE_DIR="$GIT_DIR/nix-config"
   if [[ ! -d "$FLAKE_DIR" ]]; then
     echo "Cloning nix-config to $FLAKE_DIR..."
     if command -v git &>/dev/null; then
@@ -21,6 +34,11 @@ if [[ ! -f "$SCRIPT_DIR/flake.nix" ]]; then
       exit 1
     fi
   fi
+
+  # Patch flake.nix with actual values
+  sed -i '' "s|userName = \".*\"|userName = \"$USER_NAME\"|" "$FLAKE_DIR/flake.nix"
+  sed -i '' "s|flakeDir = \".*\"|flakeDir = \"$FLAKE_DIR\"|" "$FLAKE_DIR/flake.nix"
+
   exec bash "$FLAKE_DIR/setup.sh" "$@"
 fi
 
