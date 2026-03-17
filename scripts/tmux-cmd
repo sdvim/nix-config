@@ -1,6 +1,6 @@
 #!/bin/bash
 # Usage: tmux-cmd <label> <command...>
-# Example: tmux-cmd "rebuilding" sudo darwin-rebuild switch --flake ~/nix-config#$(hostname -s)
+# Example: tmux-cmd "rebuilding" sudo darwin-rebuild switch --flake ~/Git/nix-config#$(hostname -s)
 label="$1"; shift
 STATEFILE="/tmp/tmux-cmd-state"
 LOGFILE=$(mktemp /tmp/tmux-cmd-XXXXXX)

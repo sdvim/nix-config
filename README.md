@@ -28,7 +28,7 @@ bash <(curl -sL https://raw.githubusercontent.com/sdvim/nix-config/main/setup.sh
 ```bash
 rebuild  # alias auto-detects hostname
 # or manually:
-sudo darwin-rebuild switch --flake ~/nix-config#<hostname>
+sudo darwin-rebuild switch --flake ~/Git/nix-config#<hostname>
 ```
 
 ## Architecture

@@ -8,7 +8,7 @@ There is a shell alias `rebuild` that wraps the full build command (including so
 
 ```bash
 rebuild
-# equivalent to: sudo darwin-rebuild switch --flake ~/nix-config#$(hostname -s) && source ~/.zshrc && tmux source-file ~/.tmux.conf 2>/dev/null; aerospace reload-config 2>/dev/null; true
+# equivalent to: sudo darwin-rebuild switch --flake ~/Git/nix-config#$(hostname -s) && source ~/.zshrc && tmux source-file ~/.tmux.conf 2>/dev/null; aerospace reload-config 2>/dev/null; true
 ```
 
 ## Architecture
