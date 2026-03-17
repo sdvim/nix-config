@@ -1,9 +1,9 @@
-{ lib, ... }:
+{ lib, userName, ... }:
 {
   system.keyboard.swapLeftCommandAndLeftAlt = true;
 
   # Focus Ghostty via AeroSpace (dedicated fullscreen monitor)
-  home-manager.users.stevedv.home.file.".config/aerospace/aerospace.toml".text =
+  home-manager.users.${userName}.home.file.".config/aerospace/aerospace.toml".text =
     builtins.readFile ../config/aerospace/aerospace.toml
     + ''
 

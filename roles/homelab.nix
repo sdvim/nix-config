@@ -1,11 +1,11 @@
-{ pkgs, ... }:
+{ pkgs, userName, ... }:
 {
-  home-manager.users.stevedv.home.packages = with pkgs; [
+  home-manager.users.${userName}.home.packages = with pkgs; [
     colima
     docker-client
   ];
 
-  home-manager.users.stevedv.home.shellAliases = {
+  home-manager.users.${userName}.home.shellAliases = {
     docker-start = "colima start";
     docker-stop = "colima stop";
   };

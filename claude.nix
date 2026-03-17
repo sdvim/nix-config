@@ -1,4 +1,4 @@
-_: {
+{ userName, ... }: {
   home.file.".claude/statusline.sh" = {
     executable = true;
     source = ./scripts/claude-statusline.sh;
@@ -9,7 +9,7 @@ _: {
     skipDangerousModePermissionPrompt = true;
     statusLine = {
       type = "command";
-      command = "/Users/stevedv/.claude/statusline.sh";
+      command = "/Users/${userName}/.claude/statusline.sh";
     };
     hooks = {
       Stop = [

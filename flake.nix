@@ -25,6 +25,8 @@
     let
       system = "aarch64-darwin";
       pkgs = nixpkgs.legacyPackages.${system};
+      userName = "stevedv";
+      flakeDir = "/Users/stevedv/Git/nix-config";
       mkHost =
         {
           hostName,
@@ -32,6 +34,7 @@
           roles ? [ ],
         }:
         nix-darwin.lib.darwinSystem {
+          specialArgs = { inherit flakeDir userName; };
           modules = [
             { nixpkgs.hostPlatform = system; }
             ./hosts/darwin.nix
@@ -48,7 +51,8 @@
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.backupFileExtension = "before-nix-darwin";
-              home-manager.users.stevedv = import ./home.nix;
+              home-manager.extraSpecialArgs = { inherit flakeDir userName; };
+              home-manager.users.${userName} = import ./home.nix;
             }
           ];
         };

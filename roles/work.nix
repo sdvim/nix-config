@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, userName, ... }:
 {
   homebrew.brews = [
     "cocoapods"
@@ -8,7 +8,7 @@
     "android-studio"
   ];
 
-  home-manager.users.stevedv.home.packages = with pkgs; [
+  home-manager.users.${userName}.home.packages = with pkgs; [
     eas-cli
   ];
 }

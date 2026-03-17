@@ -2,13 +2,15 @@
   config,
   pkgs,
   lib,
+  flakeDir,
+  userName,
   ...
 }:
 {
   imports = [ ./claude.nix ];
 
-  home.username = "stevedv";
-  home.homeDirectory = "/Users/stevedv";
+  home.username = userName;
+  home.homeDirectory = "/Users/${userName}";
   home.stateVersion = "25.11";
 
   programs.home-manager.enable = true;
@@ -61,7 +63,7 @@
   ];
 
   home.shellAliases = {
-    rebuild = "sudo darwin-rebuild switch --flake ~/nix-config#$(hostname -s) && source ~/.zshrc && tmux source-file ~/.tmux.conf 2>/dev/null; aerospace reload-config 2>/dev/null; true";
+    rebuild = "sudo darwin-rebuild switch --flake ${flakeDir}#$(hostname -s) && source ~/.zshrc && tmux source-file ~/.tmux.conf 2>/dev/null; aerospace reload-config 2>/dev/null; true";
 
     g = "git";
     ga = "git add .";
@@ -162,8 +164,8 @@
   };
 
   home.activation.installGitHooks = config.lib.dag.entryAfter [ "writeBoundary" ] ''
-    hooks_dir="$HOME/nix-config/.git/hooks"
-    hook_src="$HOME/nix-config/hooks/pre-push"
+    hooks_dir="${flakeDir}/.git/hooks"
+    hook_src="${flakeDir}/hooks/pre-push"
     hook_dst="$hooks_dir/pre-push"
     if [ -d "$hooks_dir" ] && [ ! "$hook_dst" -ef "$hook_src" ]; then
       ln -sf "$hook_src" "$hook_dst"
@@ -183,11 +185,11 @@
   # home.file.".config/kanata/kanata.kbd".source = ./config/kanata/kanata.kbd;
   home.file.".config/ghostty/config".text = lib.mkDefault (builtins.readFile ./config/ghostty/config);
   home.file.".config/nvim".source =
-    config.lib.file.mkOutOfStoreSymlink "/Users/stevedv/nix-config/config/nvim";
+    config.lib.file.mkOutOfStoreSymlink "${flakeDir}/config/nvim";
 
   home.file.".tmux.conf".text = ''
     # Fix PATH for Nix (so run-shell plugins can find tmux, bash, etc.)
-    set-environment -g PATH "/etc/profiles/per-user/stevedv/bin:/run/current-system/sw/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+    set-environment -g PATH "/etc/profiles/per-user/${userName}/bin:/run/current-system/sw/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
     # Status bar at the top, inherits terminal background
     set -g status-position top

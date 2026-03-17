@@ -1,11 +1,11 @@
-_: {
+{ userName, ... }: {
   system.defaults.trackpad = {
     Clicking = true;
     TrackpadRightClick = true;
   };
 
   # Quick terminal via Ghostty (ctrl+')
-  home-manager.users.stevedv.home.file.".config/ghostty/config".text =
+  home-manager.users.${userName}.home.file.".config/ghostty/config".text =
     builtins.readFile ../config/ghostty/config
     + ''
 

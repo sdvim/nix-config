@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, flakeDir, userName, ... }:
 {
 
   nixpkgs.config.allowUnfree = true;
@@ -10,10 +10,10 @@
 
   environment.systemPath = [ "/opt/homebrew/bin" ];
 
-  system.primaryUser = "stevedv";
-  users.users.stevedv = {
-    name = "stevedv";
-    home = "/Users/stevedv";
+  system.primaryUser = userName;
+  users.users.${userName} = {
+    name = userName;
+    home = "/Users/${userName}";
   };
 
   fonts.packages = [
@@ -77,7 +77,7 @@
       AppleShowAllFiles = true;
       FXPreferredViewStyle = "clmv";
       NewWindowTarget = "Other";
-      NewWindowTargetPath = "file:///Users/stevedv/Downloads";
+      NewWindowTargetPath = "file:///Users/${userName}/Downloads";
       ShowPathbar = true;
       ShowStatusBar = true;
       _FXShowPosixPathInTitle = true;
@@ -130,7 +130,7 @@
       ProgramArguments = [
         "/bin/sh"
         "-c"
-        "/bin/wait4path /nix/store && /Users/stevedv/.local/state/home-manager/gcroots/current-home/activate --driver-version 1"
+        "/bin/wait4path /nix/store && /Users/${userName}/.local/state/home-manager/gcroots/current-home/activate --driver-version 1"
       ];
       RunAtLoad = true;
       StandardOutPath = "/tmp/home-manager-activate.log";
@@ -142,9 +142,9 @@
   #   serviceConfig = {
   #     Label = "org.kanata.daemon";
   #     ProgramArguments = [
-  #       "/etc/profiles/per-user/stevedv/bin/kanata"
+  #       "/etc/profiles/per-user/${userName}/bin/kanata"
   #       "-c"
-  #       "/Users/stevedv/.config/kanata/kanata.kbd"
+  #       "/Users/${userName}/.config/kanata/kanata.kbd"
   #     ];
   #     RunAtLoad = true;
   #     KeepAlive = true;
@@ -158,21 +158,22 @@
 
     osascript -e 'tell application "System Events" to tell every desktop to set picture to POSIX file "/System/Library/Desktop Pictures/Solid Colors/Black.png"'
 
-    # Exclude ~/Git from Spotlight indexing
-    if ! mdutil -s /Users/stevedv/Git 2>&1 | grep -q "Indexing disabled"; then
-      touch /Users/stevedv/Git/.metadata_never_index
-      mdutil -i off /Users/stevedv/Git &>/dev/null || true
+    # Exclude git directory from Spotlight indexing
+    GIT_PARENT="${builtins.dirOf flakeDir}"
+    if ! mdutil -s "$GIT_PARENT" 2>&1 | grep -q "Indexing disabled"; then
+      touch "$GIT_PARENT/.metadata_never_index"
+      mdutil -i off "$GIT_PARENT" &>/dev/null || true
     fi
 
     # Global npm packages (not available in nixpkgs)
-    mkdir -p /Users/stevedv/.npm-global
-    NPM_CONFIG_PREFIX=/Users/stevedv/.npm-global npm i -g @steipete/summarize 2>/dev/null || true
-    chown -R stevedv:staff /Users/stevedv/.npm-global
+    mkdir -p /Users/${userName}/.npm-global
+    NPM_CONFIG_PREFIX=/Users/${userName}/.npm-global npm i -g @steipete/summarize 2>/dev/null || true
+    chown -R ${userName}:staff /Users/${userName}/.npm-global
   '';
 
   security.sudo.extraConfig = ''
-    stevedv ALL=(ALL) NOPASSWD: /run/current-system/sw/bin/darwin-rebuild
-    stevedv ALL=(ALL) NOPASSWD: /nix/store/*
+    ${userName} ALL=(ALL) NOPASSWD: /run/current-system/sw/bin/darwin-rebuild
+    ${userName} ALL=(ALL) NOPASSWD: /nix/store/*
   '';
 
   system.stateVersion = 6;
