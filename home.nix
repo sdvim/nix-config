@@ -63,7 +63,7 @@
   ];
 
   home.shellAliases = {
-    rebuild = "sudo darwin-rebuild switch --flake ${flakeDir}#$(hostname -s) && source ~/.zshrc && tmux source-file ~/.tmux.conf 2>/dev/null; aerospace reload-config 2>/dev/null; true";
+    rebuild = "sudo darwin-rebuild switch --flake ${flakeDir}#$(hostname -s) && source ~/.zshrc && tmux source-file ~/.tmux.conf 2>/dev/null; aerospace reload-config 2>/dev/null; ghostty +reload-config 2>/dev/null; true";
 
     g = "git";
     ga = "git add .";
@@ -118,11 +118,6 @@
     source = ./scripts/tmux-cmd;
   };
 
-  home.file.".local/bin/tmux-detach-window" = {
-    executable = true;
-    source = ./scripts/tmux-detach-window;
-  };
-
   home.file.".local/bin/tmux-claude-indicator" = {
     executable = true;
     source = ./scripts/tmux-claude-indicator;
@@ -151,6 +146,11 @@
   home.file.".local/bin/tmux-session" = {
     executable = true;
     source = ./scripts/tmux-session;
+  };
+
+  home.file.".local/bin/tmux-new-session" = {
+    executable = true;
+    source = ./scripts/tmux-new-session;
   };
 
   home.file.".local/bin/worktree-scaffold" = {
@@ -226,7 +226,7 @@
     set -g window-status-current-style 'bold'
     set -g window-status-style 'dim'
     set-hook -g pane-focus-in 'run-shell -b "P=$(tmux display -p \"#{pane_id}\"); tmux set-option -p -u @claude_waiting 2>/dev/null; grep -vxF $P /tmp/tmux-claude-queue > /tmp/tmux-claude-queue.tmp 2>/dev/null && mv /tmp/tmux-claude-queue.tmp /tmp/tmux-claude-queue || rm -f /tmp/tmux-claude-queue.tmp; tmux refresh-client -S"'
-    set-hook -g client-resized 'run-shell -b "$HOME/.local/bin/tmux-responsive-layout"'
+    # set-hook -g client-resized 'run-shell -b "$HOME/.local/bin/tmux-responsive-layout"'
 
     # Dim pane borders
     set -g pane-border-style 'fg=colour238'
@@ -283,9 +283,6 @@
     # Clear scrollback buffer (cmd+k via Ghostty)
     bind-key K if -F '#{m:[0-9]*,#{pane_current_command}}' {run-shell -b 'P="#{pane_id}"; tmux send-keys -t "$P" -l "/clear"; sleep 0.05; tmux send-keys -t "$P" Enter; sleep 0.5; tmux send-keys -t "$P" -l "/plan"; sleep 0.05; tmux send-keys -t "$P" Enter'} {send-keys C-l ; clear-history}
 
-    # Detach window to new Ghostty window (cmd+n via Ghostty)
-    bind-key N run-shell "$HOME/.local/bin/tmux-detach-window"
-
     # Forward shift+enter to apps (CSI u format for Claude Code)
     bind-key -n S-Enter send-keys Escape "[13;2u"
 
@@ -327,6 +324,9 @@
     completionInit = "autoload -U compinit && compinit -C";
     initContent = lib.mkMerge [
       ''
+          # Suppress partial-line indicator (highlighted %)
+          unsetopt PROMPT_SP
+
           # Menu-style tab completion (navigate with arrows)
           zstyle ':completion:*' menu select
           zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
