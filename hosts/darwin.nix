@@ -1,4 +1,9 @@
-{ pkgs, flakeDir, userName, ... }:
+{
+  pkgs,
+  flakeDir,
+  userName,
+  ...
+}:
 {
 
   nixpkgs.config.allowUnfree = true;

@@ -189,8 +189,7 @@
   );
   # home.file.".config/kanata/kanata.kbd".source = ./config/kanata/kanata.kbd;
   home.file.".config/ghostty/config".text = lib.mkDefault (builtins.readFile ./config/ghostty/config);
-  home.file.".config/nvim".source =
-    config.lib.file.mkOutOfStoreSymlink "${flakeDir}/config/nvim";
+  home.file.".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${flakeDir}/config/nvim";
 
   home.file.".tmux.conf".text = ''
     # Fix PATH for Nix (so run-shell plugins can find tmux, bash, etc.)

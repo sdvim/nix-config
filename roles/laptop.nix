@@ -1,4 +1,5 @@
-{ userName, ... }: {
+{ userName, ... }:
+{
   system.defaults.trackpad = {
     Clicking = true;
     TrackpadRightClick = true;

@@ -1,4 +1,5 @@
-{ userName, ... }: {
+{ userName, ... }:
+{
   home.file.".claude/statusline.sh" = {
     executable = true;
     source = ./scripts/claude-statusline.sh;
