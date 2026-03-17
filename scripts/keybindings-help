@@ -42,7 +42,8 @@ cat <<'EOF' | less -R
   TMUX
   ───────────────────────────────────────────
   cmd+k             Clear scrollback
-  cmd+n             Detach pane → new window
+  cmd+n             New session (new window)
+  cmd+shift+n       Move pane → new session
   cmd+`             Next window
   prefix W          View task output
   prefix R          View last error log
