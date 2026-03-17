@@ -163,6 +163,11 @@
     source = ./scripts/keybindings-help;
   };
 
+  home.file.".local/bin/tmux-responsive-layout" = {
+    executable = true;
+    source = ./scripts/tmux-responsive-layout;
+  };
+
   home.activation.installGitHooks = config.lib.dag.entryAfter [ "writeBoundary" ] ''
     hooks_dir="${flakeDir}/.git/hooks"
     hook_src="${flakeDir}/hooks/pre-push"
@@ -222,6 +227,7 @@
     set -g window-status-current-style 'bold'
     set -g window-status-style 'dim'
     set-hook -g pane-focus-in 'run-shell -b "P=$(tmux display -p \"#{pane_id}\"); tmux set-option -p -u @claude_waiting 2>/dev/null; grep -vxF $P /tmp/tmux-claude-queue > /tmp/tmux-claude-queue.tmp 2>/dev/null && mv /tmp/tmux-claude-queue.tmp /tmp/tmux-claude-queue || rm -f /tmp/tmux-claude-queue.tmp; tmux refresh-client -S"'
+    set-hook -g client-resized 'run-shell -b "$HOME/.local/bin/tmux-responsive-layout"'
 
     # Dim pane borders
     set -g pane-border-style 'fg=colour238'
@@ -298,6 +304,10 @@
 
     # Keybinding cheatsheet (cmd+shift+? via Ghostty)
     bind-key ? display-popup -E -w 80% -h 80% "$HOME/.local/bin/keybindings-help"
+
+    # Responsive layout: manual break/join panes
+    bind-key B run-shell -b "$HOME/.local/bin/tmux-responsive-layout break"
+    bind-key J run-shell -b "$HOME/.local/bin/tmux-responsive-layout join"
 
     # Increase scrollback
     set -g history-limit 50000
