@@ -2,16 +2,17 @@
 window="$1"
 result=""
 has_alert=0
-while IFS=$'\t' read -r cmd waiting; do
+active_pane=$(tmux display -p -t "$window" '#{pane_id}' 2>/dev/null)
+while IFS=$'\t' read -r pane_id cmd waiting; do
   if [[ "$cmd" =~ ^[0-9] ]]; then
-    if [[ "$waiting" == "1" ]]; then
+    if [[ "$waiting" == "1" && "$pane_id" != "$active_pane" ]]; then
       result+="!"
       has_alert=1
     else
       result+="✱"
     fi
   fi
-done < <(tmux list-panes -t "$window" -F '#{pane_current_command}	#{@claude_waiting}' 2>/dev/null)
+done < <(tmux list-panes -t "$window" -F '#{pane_id}	#{pane_current_command}	#{@claude_waiting}' 2>/dev/null)
 
 # Set window-level variable for tmux format coloring
 if [[ $has_alert -eq 1 ]]; then
