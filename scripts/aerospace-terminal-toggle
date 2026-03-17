@@ -13,28 +13,27 @@ focused_workspace() {
   "$AEROSPACE_BIN" list-workspaces --focused 2>/dev/null | head -n1
 }
 
-primary_monitor_id() {
-  local monitors_json displays_json primary_name primary_id
+terminal_monitor_id() {
+  local monitors_json terminal_id
   monitors_json="$("$AEROSPACE_BIN" list-monitors --json 2>/dev/null)"
-  displays_json="$(system_profiler SPDisplaysDataType -json 2>/dev/null)"
-  primary_name="$(printf '%s' "$displays_json" | jq -r '
-    .SPDisplaysDataType[]
-    | .spdisplays_ndrvs[]?
-    | select(.spdisplays_main? == "spdisplays_yes")
-    | ._name
-  ' | head -n1)"
 
-  if [[ -n "$primary_name" && "$primary_name" != "null" ]]; then
-    primary_id="$(printf '%s' "$monitors_json" | jq -r --arg name "$primary_name" '
-      map(select(."monitor-name" == $name)) | .[0]."monitor-id" // empty
+  terminal_id="$(printf '%s' "$monitors_json" | jq -r '
+    if length == 2 then
+      (map(select(."monitor-is-main" == false))[0]."monitor-id" // empty)
+    else
+      empty
+    end
+  ')"
+
+  if [[ -z "${terminal_id:-}" ]]; then
+    terminal_id="$(printf '%s' "$monitors_json" | jq -r '
+      (map(select(."monitor-is-main" == true))[0]."monitor-id")
+      // .[0]."monitor-id"
+      // empty
     ')"
   fi
 
-  if [[ -z "${primary_id:-}" ]]; then
-    primary_id="$(printf '%s' "$monitors_json" | jq -r '.[0]."monitor-id" // empty')"
-  fi
-
-  printf '%s\n' "$primary_id"
+  printf '%s\n' "$terminal_id"
 }
 
 ghostty_window_line() {
@@ -43,7 +42,7 @@ ghostty_window_line() {
 }
 
 route_first_window() {
-  local count line window_id monitor_id workspace primary_id
+  local count line window_id monitor_id workspace target_monitor_id
   count="$(ghostty_count)"
   [[ "$count" -eq 1 ]] || exit 0
 
@@ -51,11 +50,11 @@ route_first_window() {
   [[ -n "$line" ]] || exit 0
 
   IFS='|' read -r window_id monitor_id workspace <<<"$line"
-  primary_id="$(primary_monitor_id)"
-  [[ -n "$primary_id" ]] || exit 0
+  target_monitor_id="$(terminal_monitor_id)"
+  [[ -n "$target_monitor_id" ]] || exit 0
 
-  if [[ "$monitor_id" != "$primary_id" ]]; then
-    "$AEROSPACE_BIN" move-node-to-monitor --window-id "$window_id" "$primary_id" >/dev/null 2>&1 || true
+  if [[ "$monitor_id" != "$target_monitor_id" ]]; then
+    "$AEROSPACE_BIN" move-node-to-monitor --window-id "$window_id" "$target_monitor_id" >/dev/null 2>&1 || true
   fi
 
   if [[ "$workspace" != "$TERMINAL_WORKSPACE" ]]; then

@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ lib, userName, ... }:
 {
   system.keyboard.swapLeftCommandAndLeftAlt = true;
 
@@ -23,6 +23,22 @@
       StandardErrorPath = "/tmp/displayplacer.log";
     };
   };
+
+  home-manager.users.${userName}.home.file.".config/aerospace/aerospace.toml".text =
+    builtins.readFile ../config/aerospace/aerospace.toml
+    + ''
+
+      # Multi-monitor workspace split:
+      # terminal prefers the external monitor when there are two displays,
+      # otherwise it falls back to the main display
+      [workspace-to-monitor-force-assignment]
+      "`" = ['secondary', 'main']
+      "1" = 'main'
+      "2" = 'main'
+      "3" = 'main'
+      "4" = 'secondary'
+      "5" = 'secondary'
+    '';
 
   # Enable remote access services (SSH, Screen Sharing, File Sharing)
   system.activationScripts.postActivation.text = lib.mkAfter ''
