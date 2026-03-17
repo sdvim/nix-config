@@ -80,6 +80,7 @@
         roles = [
           ./roles/desktop.nix
           ./roles/homelab.nix
+          ./roles/work.nix
         ];
       };
 
