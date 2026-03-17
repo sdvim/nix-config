@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+AEROSPACE_BIN="${AEROSPACE_BIN:-aerospace}"
+GHOSTTY_APP_ID="com.mitchellh.ghostty"
+TERMINAL_WORKSPACE='`'
+
+ghostty_count() {
+  "$AEROSPACE_BIN" list-windows --monitor all --app-bundle-id "$GHOSTTY_APP_ID" --count 2>/dev/null || echo 0
+}
+
+focused_workspace() {
+  "$AEROSPACE_BIN" list-workspaces --focused 2>/dev/null | head -n1
+}
+
+primary_monitor_id() {
+  local monitors_json displays_json primary_name primary_id
+  monitors_json="$("$AEROSPACE_BIN" list-monitors --json 2>/dev/null)"
+  displays_json="$(system_profiler SPDisplaysDataType -json 2>/dev/null)"
+  primary_name="$(printf '%s' "$displays_json" | jq -r '
+    .SPDisplaysDataType[]
+    | .spdisplays_ndrvs[]?
+    | select(.spdisplays_main? == "spdisplays_yes")
+    | ._name
+  ' | head -n1)"
+
+  if [[ -n "$primary_name" && "$primary_name" != "null" ]]; then
+    primary_id="$(printf '%s' "$monitors_json" | jq -r --arg name "$primary_name" '
+      map(select(."monitor-name" == $name)) | .[0]."monitor-id" // empty
+    ')"
+  fi
+
+  if [[ -z "${primary_id:-}" ]]; then
+    primary_id="$(printf '%s' "$monitors_json" | jq -r '.[0]."monitor-id" // empty')"
+  fi
+
+  printf '%s\n' "$primary_id"
+}
+
+ghostty_window_line() {
+  "$AEROSPACE_BIN" list-windows --monitor all --app-bundle-id "$GHOSTTY_APP_ID" \
+    --format '%{window-id}|%{monitor-id}|%{workspace}' 2>/dev/null | sort -t'|' -k1,1nr | head -n1
+}
+
+route_first_window() {
+  local count line window_id monitor_id workspace primary_id
+  count="$(ghostty_count)"
+  [[ "$count" -eq 1 ]] || exit 0
+
+  line="$(ghostty_window_line)"
+  [[ -n "$line" ]] || exit 0
+
+  IFS='|' read -r window_id monitor_id workspace <<<"$line"
+  primary_id="$(primary_monitor_id)"
+  [[ -n "$primary_id" ]] || exit 0
+
+  if [[ "$monitor_id" != "$primary_id" ]]; then
+    "$AEROSPACE_BIN" move-node-to-monitor --window-id "$window_id" "$primary_id" >/dev/null 2>&1 || true
+  fi
+
+  if [[ "$workspace" != "$TERMINAL_WORKSPACE" ]]; then
+    "$AEROSPACE_BIN" move-node-to-workspace --window-id "$window_id" --focus-follows-window "$TERMINAL_WORKSPACE" >/dev/null 2>&1 || true
+  else
+    "$AEROSPACE_BIN" workspace "$TERMINAL_WORKSPACE" >/dev/null 2>&1 || true
+  fi
+}
+
+open_first_window() {
+  osascript \
+    -e 'tell application "Ghostty" to activate' \
+    -e 'tell application "Ghostty" to new window' \
+    >/dev/null
+}
+
+wait_for_window() {
+  local attempt
+  for attempt in $(seq 1 30); do
+    if [[ "$(ghostty_count)" -gt 0 ]]; then
+      return 0
+    fi
+    sleep 0.1
+  done
+  return 1
+}
+
+toggle_workspace() {
+  local current_workspace
+  current_workspace="$(focused_workspace)"
+
+  if [[ "$current_workspace" == "$TERMINAL_WORKSPACE" ]]; then
+    "$AEROSPACE_BIN" workspace-back-and-forth >/dev/null 2>&1 || true
+    exit 0
+  fi
+
+  if [[ "$(ghostty_count)" -eq 0 ]]; then
+    open_first_window
+    wait_for_window || exit 1
+    route_first_window
+  fi
+
+  "$AEROSPACE_BIN" workspace "$TERMINAL_WORKSPACE" >/dev/null 2>&1 || true
+}
+
+case "${1:-toggle}" in
+  toggle)
+    toggle_workspace
+    ;;
+  route-first-window)
+    route_first_window
+    ;;
+  *)
+    echo "usage: $(basename "$0") [toggle|route-first-window]" >&2
+    exit 1
+    ;;
+esac

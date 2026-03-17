@@ -44,3 +44,14 @@ Everything in this repo is declarative. Never edit dotfiles or config files dire
 - nix-darwin options: https://daiderd.com/nix-darwin/manual/index.html
 - Home Manager options: https://nix-community.github.io/home-manager/options.xhtml
 - Nix language: https://nix.dev/manual/nix/latest/language/
+
+## Research before acting
+
+Make zero assumptions. Before proposing any change, do your due diligence:
+
+- **Read the source code** — use rg (ripgrep), glob, and read the actual files in this repo. Never guess at option names, module structure, or how something is wired up.
+- **Check man pages and CLI help** — run `man <tool>`, `<tool> --help`, or `nix-store --option-help` to confirm flags, syntax, and behavior.
+- **Consult documentation** — use the doc links above or fetch upstream docs to verify option schemas, types, and defaults.
+- **Verify, don't guess** — if you're unsure whether an option exists, a package is available, or a config key is valid, look it up before writing it into the plan or the code.
+
+If you cannot verify something with the tools at hand, say so explicitly rather than proceeding on an assumption.
