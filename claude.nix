@@ -32,6 +32,16 @@ _: {
           ];
         }
       ];
+      PostToolUse = [
+        {
+          hooks = [
+            {
+              type = "command";
+              command = "tmux set-option -p -u @claude_waiting 2>/dev/null; PANE_ID=$(tmux display -p '#{pane_id}' 2>/dev/null); sed -i '' \"/^\${PANE_ID}$/d\" /tmp/tmux-claude-queue 2>/dev/null; tmux refresh-client -S 2>/dev/null; true";
+            }
+          ];
+        }
+      ];
       Notification = [
         {
           hooks = [
