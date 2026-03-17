@@ -1,7 +1,17 @@
 #!/bin/bash
-case "$1" in
+cmd="$1"
+window="$2"
+
+# If any pane in this window is running Claude, suppress process display
+if [[ -n "$window" ]]; then
+  while IFS= read -r pcmd; do
+    [[ "$pcmd" =~ ^[0-9] ]] && exit 0
+  done < <(tmux list-panes -t "$window" -F '#{pane_current_command}' 2>/dev/null)
+fi
+
+case "$cmd" in
   [0-9]*)  echo "✱" ;;
   codex*)  echo "¢" ;;
   gemini*) echo "✦" ;;
-  *)       echo "$1" ;;
+  *)       echo "$cmd" ;;
 esac

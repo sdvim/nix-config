@@ -127,6 +127,16 @@
     source = ./scripts/tmux-detach-window;
   };
 
+  home.file.".local/bin/tmux-claude-indicator" = {
+    executable = true;
+    source = ./scripts/tmux-claude-indicator;
+  };
+
+  home.file.".local/bin/tmux-claude-next" = {
+    executable = true;
+    source = ./scripts/tmux-claude-next;
+  };
+
   home.file.".local/bin/gcert" = {
     executable = true;
     source = ./scripts/gcert;
@@ -207,18 +217,15 @@
     # Window titles: dir:process
     # Known dirs get short aliases, otherwise show basename
     # Claude Code overwrites its process title with a version — detect and fix
-    # When Claude/Codex is awaiting input, hooks set @claude_waiting on the pane → shows orange !!
+    # Per-pane Claude indicators: ! = waiting, ✱ = active
     set -g automatic-rename on
     set -g allow-rename off
     set -g set-titles off
-    set -g window-status-format '#{?#{@claude_waiting},#[fg=colour208],}#I:#(~/.local/bin/tmux-fmt-dir #{pane_current_path}):#(~/.local/bin/tmux-fmt-cmd #{pane_current_command})#{?#{@claude_waiting},!!#[default],}'
-    set -g window-status-current-format '#{?#{@claude_waiting},#[fg=colour208 bold],#[bold]}#I:#(~/.local/bin/tmux-fmt-dir #{pane_current_path}):#(~/.local/bin/tmux-fmt-cmd #{pane_current_command})#{?#{@claude_waiting},!!#[default],}'
+    set -g window-status-format '#{?@window_has_alerts,#[fg=colour208],}#I:#(~/.local/bin/tmux-fmt-dir #{pane_current_path}):#(~/.local/bin/tmux-fmt-cmd #{pane_current_command} #{window_id})#(~/.local/bin/tmux-claude-indicator #{window_id})#{?@window_has_alerts,#[default],}'
+    set -g window-status-current-format '#{?@window_has_alerts,#[fg=colour208 bold],#[bold]}#I:#(~/.local/bin/tmux-fmt-dir #{pane_current_path}):#(~/.local/bin/tmux-fmt-cmd #{pane_current_command} #{window_id})#(~/.local/bin/tmux-claude-indicator #{window_id})#{?@window_has_alerts,#[default],}'
     set -g window-status-current-style 'bold'
     set -g window-status-style 'dim'
-    set -g pane-border-format '#{?@claude_waiting,#[fg=colour16 bg=colour208] waiting for input #[default],}'
-    set-hook -g pane-focus-in 'set-option -p -u @claude_waiting; set-option -w pane-border-status off; refresh-client -S'
-    set-hook -g window-pane-changed 'set-option -p -u @claude_waiting; set-option -w pane-border-status off; refresh-client -S'
-    set-hook -g session-window-changed 'set-option -p -u @claude_waiting; set-option -w pane-border-status off; refresh-client -S'
+    set-hook -g pane-focus-in 'run-shell -b "P=$(tmux display -p \"#{pane_id}\"); tmux set-option -p -u @claude_waiting 2>/dev/null; grep -vxF $P /tmp/tmux-claude-queue > /tmp/tmux-claude-queue.tmp 2>/dev/null && mv /tmp/tmux-claude-queue.tmp /tmp/tmux-claude-queue || rm -f /tmp/tmux-claude-queue.tmp; tmux refresh-client -S"'
 
     # Dim pane borders
     set -g pane-border-style 'fg=colour238'
@@ -289,6 +296,9 @@
 
     # View last tmux-cmd error log
     bind-key R new-window -n "error" "less -R /tmp/tmux-cmd-last-error"
+
+    # Jump to next waiting Claude pane (prefix + G)
+    bind-key G run-shell "$HOME/.local/bin/tmux-claude-next"
 
     # Keybinding cheatsheet (cmd+shift+? via Ghostty)
     bind-key ? display-popup -E -w 80% -h 80% "$HOME/.local/bin/keybindings-help"

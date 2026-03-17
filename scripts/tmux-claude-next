@@ -1,0 +1,19 @@
+#!/bin/bash
+queue="/tmp/tmux-claude-queue"
+[[ -f "$queue" ]] || exit 0
+
+while IFS= read -r pane_id; do
+  # Check pane still exists and is waiting
+  waiting=$(tmux display -t "$pane_id" -p '#{@claude_waiting}' 2>/dev/null) || continue
+  if [[ "$waiting" == "1" ]]; then
+    # Get session:window for this pane, then switch + select
+    target=$(tmux display -t "$pane_id" -p '#{session_name}:#{window_index}' 2>/dev/null)
+    tmux select-window -t "$target" 2>/dev/null
+    tmux select-pane -t "$pane_id" 2>/dev/null
+    exit 0
+  else
+    # Stale entry, clean up
+    escaped=$(echo "$pane_id" | sed 's/%/\\%/g')
+    sed -i '' "/^${escaped}$/d" "$queue"
+  fi
+done < "$queue"
