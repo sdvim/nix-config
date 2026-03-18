@@ -6,6 +6,11 @@
   userName,
   ...
 }:
+let
+  terminalWorkspace = "~";
+  renderTemplate = path:
+    builtins.replaceStrings [ "__TERMINAL_WORKSPACE__" ] [ terminalWorkspace ] (builtins.readFile path);
+in
 {
   imports = [ ./claude.nix ];
 
@@ -57,6 +62,8 @@
     EDITOR = "nvim";
     VISUAL = "nvim";
     NPM_CONFIG_PREFIX = "$HOME/.npm-global";
+    LANG = "en_US.UTF-8";
+    LC_ALL = "en_US.UTF-8";
   };
 
   home.sessionPath = [
@@ -250,12 +257,12 @@
 
   home.file.".local/bin/aerospace-terminal-toggle" = {
     executable = true;
-    source = ./scripts/aerospace-terminal-toggle;
+    text = renderTemplate ./scripts/aerospace-terminal-toggle;
   };
 
   home.file.".local/bin/aerospace-workspace-caps" = {
     executable = true;
-    source = ./scripts/aerospace-workspace-caps;
+    text = renderTemplate ./scripts/aerospace-workspace-caps;
   };
 
   home.file.".local/bin/ci" = {
@@ -280,7 +287,7 @@
   '';
 
   home.file.".config/aerospace/aerospace.toml".text = lib.mkDefault (
-    builtins.readFile ./config/aerospace/aerospace.toml
+    renderTemplate ./config/aerospace/aerospace.toml
   );
   # home.file.".config/kanata/kanata.kbd".source = ./config/kanata/kanata.kbd;
   home.file.".config/ghostty/config".text = lib.mkDefault (builtins.readFile ./config/ghostty/config);
