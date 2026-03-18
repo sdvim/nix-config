@@ -23,7 +23,7 @@ accordion-padding = 30
 # Do not warp the cursor when focus moves across monitors
 
 # Workspaces: dedicated terminal workspace plus five numeric workspaces
-persistent-workspaces = ['`', '1', '2', '3', '4', '5']
+persistent-workspaces = ['__TERMINAL_WORKSPACE__', '1', '2', '3', '4', '5']
 
 [key-mapping]
 preset = 'qwerty'
@@ -62,20 +62,18 @@ alt-minus = 'resize smart -50'
 alt-equal = 'resize smart +50'
 
 # Workspaces
-alt-backtick = 'workspace `'
-alt-1 = 'workspace 1'
-alt-2 = 'workspace 2'
-alt-3 = 'workspace 3'
-alt-4 = 'workspace 4'
-alt-5 = 'workspace 5'
+ctrl-1 = 'workspace 1'
+ctrl-2 = 'workspace 2'
+ctrl-3 = 'workspace 3'
+ctrl-4 = 'workspace 4'
+ctrl-5 = 'workspace 5'
 
 # Move window to workspace
-alt-shift-backtick = ['move-node-to-workspace `', 'exec-and-forget /Users/stevedv/.local/bin/aerospace-workspace-caps']
-alt-shift-1 = ['move-node-to-workspace 1', 'exec-and-forget /Users/stevedv/.local/bin/aerospace-workspace-caps']
-alt-shift-2 = ['move-node-to-workspace 2', 'exec-and-forget /Users/stevedv/.local/bin/aerospace-workspace-caps']
-alt-shift-3 = ['move-node-to-workspace 3', 'exec-and-forget /Users/stevedv/.local/bin/aerospace-workspace-caps']
-alt-shift-4 = ['move-node-to-workspace 4', 'exec-and-forget /Users/stevedv/.local/bin/aerospace-workspace-caps']
-alt-shift-5 = ['move-node-to-workspace 5', 'exec-and-forget /Users/stevedv/.local/bin/aerospace-workspace-caps']
+ctrl-shift-1 = ['move-node-to-workspace 1', 'exec-and-forget /Users/stevedv/.local/bin/aerospace-workspace-caps']
+ctrl-shift-2 = ['move-node-to-workspace 2', 'exec-and-forget /Users/stevedv/.local/bin/aerospace-workspace-caps']
+ctrl-shift-3 = ['move-node-to-workspace 3', 'exec-and-forget /Users/stevedv/.local/bin/aerospace-workspace-caps']
+ctrl-shift-4 = ['move-node-to-workspace 4', 'exec-and-forget /Users/stevedv/.local/bin/aerospace-workspace-caps']
+ctrl-shift-5 = ['move-node-to-workspace 5', 'exec-and-forget /Users/stevedv/.local/bin/aerospace-workspace-caps']
 
 # Quick workspace switching
 alt-tab = 'workspace-back-and-forth'

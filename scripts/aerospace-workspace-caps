@@ -2,7 +2,7 @@
 set -euo pipefail
 
 AEROSPACE_BIN="${AEROSPACE_BIN:-aerospace}"
-TERMINAL_WORKSPACE='`'
+TERMINAL_WORKSPACE='__TERMINAL_WORKSPACE__'
 
 display_metadata() {
   system_profiler SPDisplaysDataType -json 2>/dev/null

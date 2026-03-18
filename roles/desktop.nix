@@ -1,4 +1,9 @@
 { lib, userName, ... }:
+let
+  terminalWorkspace = "~";
+  renderTemplate = path:
+    builtins.replaceStrings [ "__TERMINAL_WORKSPACE__" ] [ terminalWorkspace ] (builtins.readFile path);
+in
 {
   system.keyboard.swapLeftCommandAndLeftAlt = true;
 
@@ -25,14 +30,14 @@
   };
 
   home-manager.users.${userName}.home.file.".config/aerospace/aerospace.toml".text =
-    builtins.readFile ../config/aerospace/aerospace.toml
+    renderTemplate ../config/aerospace/aerospace.toml
     + ''
 
       # Multi-monitor workspace split:
       # terminal prefers the external monitor when there are two displays,
       # otherwise it falls back to the main display
       [workspace-to-monitor-force-assignment]
-      "`" = ['secondary', 'main']
+      "${terminalWorkspace}" = ['secondary', 'main']
       "1" = 'main'
       "2" = 'main'
       "3" = 'main'

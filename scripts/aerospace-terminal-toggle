@@ -3,7 +3,7 @@ set -euo pipefail
 
 AEROSPACE_BIN="${AEROSPACE_BIN:-aerospace}"
 GHOSTTY_APP_ID="com.mitchellh.ghostty"
-TERMINAL_WORKSPACE='`'
+TERMINAL_WORKSPACE='__TERMINAL_WORKSPACE__'
 
 ghostty_count() {
   "$AEROSPACE_BIN" list-windows --monitor all --app-bundle-id "$GHOSTTY_APP_ID" --count 2>/dev/null || echo 0
