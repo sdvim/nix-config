@@ -123,6 +123,7 @@
       "helium-browser"
       "homerow"
       "obsidian"
+      "wispr-flow"
 
       # "karabiner-elements"  # requires interactive sudo for pkg install
     ];
