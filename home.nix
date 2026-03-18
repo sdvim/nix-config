@@ -8,7 +8,8 @@
 }:
 let
   terminalWorkspace = "~";
-  renderTemplate = path:
+  renderTemplate =
+    path:
     builtins.replaceStrings [ "__TERMINAL_WORKSPACE__" ] [ terminalWorkspace ] (builtins.readFile path);
 in
 {
