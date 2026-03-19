@@ -45,7 +45,7 @@ fi
 # ──────────────────────────────────────────────
 # Host detection
 # ──────────────────────────────────────────────
-KNOWN_HOSTS=("air" "mini")
+KNOWN_HOSTS=($(grep 'darwinConfigurations\."' "$SCRIPT_DIR/flake.nix" | sed 's/.*darwinConfigurations\."\([^"]*\)".*/\1/'))
 
 if [[ -n "$1" ]]; then
   HOST="$1"
