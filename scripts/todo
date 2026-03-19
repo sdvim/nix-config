@@ -1,0 +1,6 @@
+#!/bin/bash
+set -euo pipefail
+root=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "Not in a git repo"; exit 1; }
+file="$root/TODO.md"
+[ ! -f "$file" ] && touch "$file"
+echo "- [ ] $*" >> "$file"
