@@ -39,11 +39,6 @@ in
       # otherwise it falls back to the main display
       [workspace-to-monitor-force-assignment]
       "${terminalWorkspace}" = ['secondary', 'main']
-      "1" = 'main'
-      "2" = 'main'
-      "3" = 'main'
-      "4" = 'secondary'
-      "5" = 'secondary'
     '';
 
   # Enable remote access services (SSH, Screen Sharing, File Sharing)
