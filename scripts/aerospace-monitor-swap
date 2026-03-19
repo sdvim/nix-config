@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+monitors=$(aerospace list-monitors --json)
+count=$(printf '%s' "$monitors" | jq 'length')
+[[ "$count" -eq 2 ]] || exit 0
+
+id1=$(printf '%s' "$monitors" | jq -r '.[0]."monitor-id"')
+id2=$(printf '%s' "$monitors" | jq -r '.[1]."monitor-id"')
+
+ws1=$(aerospace list-workspaces --monitor "$id1" --visible)
+ws2=$(aerospace list-workspaces --monitor "$id2" --visible)
+
+[[ "$ws1" != "$ws2" ]] || exit 0
+
+aerospace move-workspace-to-monitor --workspace "$ws1" "$id2"
+aerospace move-workspace-to-monitor --workspace "$ws2" "$id1"

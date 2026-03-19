@@ -3,8 +3,8 @@
 
 config-version = 2
 
-after-startup-command = ['exec-and-forget /Users/stevedv/.local/bin/aerospace-workspace-caps']
-exec-on-workspace-change = ['/bin/zsh', '-lc', '/Users/stevedv/.local/bin/aerospace-workspace-caps']
+after-startup-command = ['exec-and-forget __USER_HOME__/.local/bin/aerospace-workspace-caps']
+exec-on-workspace-change = ['/bin/zsh', '-lc', '__USER_HOME__/.local/bin/aerospace-workspace-caps']
 
 # Start at login
 start-at-login = true
@@ -73,15 +73,15 @@ ctrl-2 = 'workspace 2'
 ctrl-3 = 'workspace 3'
 
 # Move window to workspace
-ctrl-shift-1 = ['move-node-to-workspace 1', 'exec-and-forget /Users/stevedv/.local/bin/aerospace-workspace-caps']
-ctrl-shift-2 = ['move-node-to-workspace 2', 'exec-and-forget /Users/stevedv/.local/bin/aerospace-workspace-caps']
-ctrl-shift-3 = ['move-node-to-workspace 3', 'exec-and-forget /Users/stevedv/.local/bin/aerospace-workspace-caps']
+ctrl-shift-1 = ['move-node-to-workspace 1', 'exec-and-forget __USER_HOME__/.local/bin/aerospace-workspace-caps']
+ctrl-shift-2 = ['move-node-to-workspace 2', 'exec-and-forget __USER_HOME__/.local/bin/aerospace-workspace-caps']
+ctrl-shift-3 = ['move-node-to-workspace 3', 'exec-and-forget __USER_HOME__/.local/bin/aerospace-workspace-caps']
 
 # Quick workspace switching
 alt-tab = 'workspace-back-and-forth'
-alt-shift-tab = ['move-workspace-to-monitor --wrap-around next', 'exec-and-forget /Users/stevedv/.local/bin/aerospace-workspace-caps']
-ctrl-quote = 'exec-and-forget /Users/stevedv/.local/bin/aerospace-terminal-toggle'
-ctrl-backtick = 'move-workspace-to-monitor --workspace __TERMINAL_WORKSPACE__ --wrap-around next'
+alt-shift-tab = ['move-workspace-to-monitor --wrap-around next', 'exec-and-forget __USER_HOME__/.local/bin/aerospace-workspace-caps']
+ctrl-quote = 'exec-and-forget __USER_HOME__/.local/bin/aerospace-terminal-toggle'
+ctrl-backtick = 'exec-and-forget __USER_HOME__/.local/bin/aerospace-monitor-swap'
 
 # App launchers
 alt-g = 'exec-and-forget open -a Ghostty'
@@ -91,11 +91,11 @@ alt-h = 'exec-and-forget open -a Helium'
 alt-shift-semicolon = 'mode service'
 
 [[on-window-detected]]
-run = ['exec-and-forget /Users/stevedv/.local/bin/aerospace-workspace-caps']
+run = ['exec-and-forget __USER_HOME__/.local/bin/aerospace-workspace-caps']
 
 [[on-window-detected]]
 if.app-id = 'com.mitchellh.ghostty'
-run = ['exec-and-forget /Users/stevedv/.local/bin/aerospace-terminal-toggle route-first-window']
+run = ['exec-and-forget __USER_HOME__/.local/bin/aerospace-terminal-toggle route-first-window']
 
 [[on-window-detected]]
 if.app-id = 'net.imput.helium'

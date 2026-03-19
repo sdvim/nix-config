@@ -10,7 +10,10 @@ let
   terminalWorkspace = "~";
   renderTemplate =
     path:
-    builtins.replaceStrings [ "__TERMINAL_WORKSPACE__" ] [ terminalWorkspace ] (builtins.readFile path);
+    builtins.replaceStrings
+      [ "__TERMINAL_WORKSPACE__" "__USER_HOME__" ]
+      [ terminalWorkspace "/Users/${userName}" ]
+      (builtins.readFile path);
 in
 {
   imports = [ ./claude.nix ];
@@ -271,6 +274,11 @@ in
   home.file.".local/bin/aerospace-workspace-caps" = {
     executable = true;
     text = renderTemplate ./scripts/aerospace-workspace-caps;
+  };
+
+  home.file.".local/bin/aerospace-monitor-swap" = {
+    executable = true;
+    source = ./scripts/aerospace-monitor-swap;
   };
 
   home.file.".local/bin/ci" = {
