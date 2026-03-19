@@ -31,15 +31,7 @@ in
   };
 
   home-manager.users.${userName}.home.file.".config/aerospace/aerospace.toml".text =
-    renderTemplate ../config/aerospace/aerospace.toml
-    + ''
-
-      # Multi-monitor workspace split:
-      # terminal prefers the external monitor when there are two displays,
-      # otherwise it falls back to the main display
-      [workspace-to-monitor-force-assignment]
-      "${terminalWorkspace}" = ['secondary', 'main']
-    '';
+    renderTemplate ../config/aerospace/aerospace.toml;
 
   # Enable remote access services (SSH, Screen Sharing, File Sharing)
   system.activationScripts.postActivation.text = lib.mkAfter ''
