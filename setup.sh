@@ -42,6 +42,42 @@ if [[ ! -f "$SCRIPT_DIR/flake.nix" ]]; then
   exec bash "$FLAKE_DIR/setup.sh" "$@"
 fi
 
+# Colors
+bold='\033[1m'
+green='\033[0;32m'
+yellow='\033[0;33m'
+red='\033[0;31m'
+reset='\033[0m'
+
+step=0
+
+ask() {
+  step=$((step + 1))
+  printf "\n${bold}${step}. $1 [y/n]${reset} "
+  read -r answer
+  [[ "$answer" =~ ^[Yy]$ ]]
+}
+
+info()  { printf "${green}>>>${reset} %s\n" "$1"; }
+warn()  { printf "${yellow}>>>${reset} %s\n" "$1"; }
+skip()  { printf "    Skipped.\n"; }
+
+# ──────────────────────────────────────────────
+# Full Disk Access check
+# ──────────────────────────────────────────────
+if ! plutil -lint /Library/Preferences/com.apple.TimeMachine.plist >/dev/null 2>&1; then
+  TERMINAL="${TERM_PROGRAM:-unknown terminal}"
+  warn "Full Disk Access is required but $TERMINAL does not have it."
+  if ask "Open System Settings to grant Full Disk Access?"; then
+    open "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_AllFiles" 2>/dev/null \
+      || open "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles" 2>/dev/null
+  fi
+  warn "Please grant Full Disk Access to $TERMINAL, then re-run this script."
+  exit 1
+fi
+
+info "Full Disk Access confirmed."
+
 # ──────────────────────────────────────────────
 # Host detection
 # ──────────────────────────────────────────────
@@ -69,26 +105,6 @@ if ! $host_valid; then
 fi
 
 FLAKE_DIR="$(cd "$(dirname "$0")" && pwd)"
-
-# Colors
-bold='\033[1m'
-green='\033[0;32m'
-yellow='\033[0;33m'
-red='\033[0;31m'
-reset='\033[0m'
-
-step=0
-
-ask() {
-  step=$((step + 1))
-  printf "\n${bold}${step}. $1 [y/n]${reset} "
-  read -r answer
-  [[ "$answer" =~ ^[Yy]$ ]]
-}
-
-info()  { printf "${green}>>>${reset} %s\n" "$1"; }
-warn()  { printf "${yellow}>>>${reset} %s\n" "$1"; }
-skip()  { printf "    Skipped.\n"; }
 
 # ──────────────────────────────────────────────
 # Repo location migration
@@ -194,19 +210,7 @@ else
 fi
 
 # ──────────────────────────────────────────────
-# 5. Grant Full Disk Access reminder
-# ──────────────────────────────────────────────
-if ask "Do you need a reminder to grant Full Disk Access to your terminal? (required for universalaccess defaults)"; then
-  warn "Open: System Settings > Privacy & Security > Full Disk Access"
-  warn "Add your terminal app (Terminal, Ghostty, iTerm2, etc.)"
-  printf "    Press Enter when done... "
-  read -r
-else
-  skip
-fi
-
-# ──────────────────────────────────────────────
-# 6. Build and switch
+# 5. Build and switch
 # ──────────────────────────────────────────────
 if ask "Run darwin-rebuild switch now?"; then
   if command -v darwin-rebuild &>/dev/null; then
@@ -222,7 +226,7 @@ else
 fi
 
 # ──────────────────────────────────────────────
-# 7. GitHub CLI login
+# 6. GitHub CLI login
 # ──────────────────────────────────────────────
 if gh auth status &>/dev/null; then
   info "GitHub CLI is already authenticated."
@@ -236,7 +240,7 @@ else
 fi
 
 # ──────────────────────────────────────────────
-# 8. SSH key generation + GitHub upload
+# 7. SSH key generation + GitHub upload
 # ──────────────────────────────────────────────
 if [[ -f "$HOME/.ssh/id_ed25519" ]]; then
   info "SSH key already exists."
@@ -261,7 +265,7 @@ else
 fi
 
 # ──────────────────────────────────────────────
-# 9. GPG key import from 1Password
+# 8. GPG key import from 1Password
 # ──────────────────────────────────────────────
 GPG_KEY_ID="333487C4FFB88C8D"
 if gpg --list-secret-keys "$GPG_KEY_ID" &>/dev/null; then
@@ -281,7 +285,7 @@ else
 fi
 
 # ──────────────────────────────────────────────
-# 10. git-crypt unlock
+# 9. git-crypt unlock
 # ──────────────────────────────────────────────
 if git -C "$FLAKE_DIR" crypt status 2>/dev/null | grep -q "encrypted:"; then
   if ask "Unlock git-crypt (for encrypted fonts)?"; then
@@ -295,7 +299,7 @@ else
 fi
 
 # ──────────────────────────────────────────────
-# 11. Install Claude Code
+# 10. Install Claude Code
 # ──────────────────────────────────────────────
 if command -v claude &>/dev/null; then
   info "Claude Code is already installed."
