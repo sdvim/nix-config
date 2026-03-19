@@ -74,7 +74,7 @@ in
   ];
 
   home.shellAliases = {
-    rebuild = "sudo darwin-rebuild switch --flake ${flakeDir}#$(hostname -s) && source ~/.zshrc && tmux source-file ~/.tmux.conf 2>/dev/null; aerospace reload-config 2>/dev/null; ghostty +reload-config 2>/dev/null; true";
+    rebuild = "git -C ${flakeDir} add scripts/ config/ && sudo darwin-rebuild switch --flake ${flakeDir}#$(hostname -s) && source ~/.zshrc && tmux source-file ~/.tmux.conf 2>/dev/null; aerospace reload-config 2>/dev/null; ghostty +reload-config 2>/dev/null; true";
     reload = "source ~/.zshrc";
 
     g = "git";
@@ -270,6 +270,11 @@ in
   home.file.".local/bin/ci" = {
     executable = true;
     source = ./scripts/ci;
+  };
+
+  home.file.".local/bin/todo" = {
+    executable = true;
+    source = ./scripts/todo;
   };
 
   home.activation.installGitHooks = config.lib.dag.entryAfter [ "writeBoundary" ] ''
