@@ -1,5 +1,5 @@
 # Font
-font-family = JetBrainsMono Nerd Font
+font-family = Lilex Nerd Font
 
 theme = GitHub Dark High Contrast
 background = #000000
@@ -26,6 +26,8 @@ keybind = super+right=text:\x05
 keybind = alt+left=text:\x1b[1;3D
 keybind = alt+right=text:\x1b[1;3C
 keybind = super+shift+/=text:\x02?
+keybind = super+equal=increase_font_size:1
+keybind = super+minus=decrease_font_size:1
 keybind = super+ctrl+f=toggle_fullscreen
 keybind = super+q=quit
 keybind = super+k=text:\x02K
@@ -38,7 +40,7 @@ keybind = super+shift+r=text:\x02\x1bR
 
 # Tmux panes (select by number)
 keybind = super+t=text:\x02c
-keybind = super+0=text:\x020
+keybind = super+0=reset_font_size
 keybind = super+1=text:\x021
 keybind = super+2=text:\x022
 keybind = super+3=text:\x023

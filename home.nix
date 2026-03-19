@@ -473,8 +473,6 @@ in
           alias tree="eza -T -L 4 -a --git-ignore --color=always"
         fi
 
-        gd() { git status -s && echo && git diff "$@"; }
-
         z() {
           __zoxide_doctor
           if [[ "$#" -eq 0 ]]; then

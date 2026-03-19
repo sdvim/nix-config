@@ -26,7 +26,7 @@
       mkdir -p $out/share/fonts/truetype
       cp ${../fonts}/*.ttf $out/share/fonts/truetype/
     '')
-    pkgs.nerd-fonts.jetbrains-mono
+    pkgs.nerd-fonts.lilex
   ];
 
   programs.zsh.enable = true;
