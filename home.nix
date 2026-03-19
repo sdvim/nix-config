@@ -83,13 +83,14 @@ in
     gc = "git commit";
     gca = "git commit --amend";
     gco = "git checkout";
-    gcom = "git checkout main --ignore-other-worktrees";
+    gcom = "git checkout main";
     gf = "git fetch --prune";
     gl = "git log --pretty=format:'%C(yellow)%h%C(reset)%C(red)%d%C(reset)%n%C(cyan)%ar%C(reset) %C(green)<%an>%C(reset)%n%s%n' --no-merges --max-count 5";
+    gp = "git pull";
     gpom = "git pull origin main";
-    gp = "git push";
     gr = "git rebase";
     grom = "git rebase origin/main";
+    gdm = "git diff --stat -p origin/main";
     gs = "git status -s";
     undo = "git reset HEAD~1";
     wip = "git add . && git commit -m 'WIP'";
