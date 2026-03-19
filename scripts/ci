@@ -1,33 +1,204 @@
 #!/bin/bash
-STATUSLINE=false
+
+# --- Shared helpers ---
+
+CACHE_DIR="/tmp/ci-cache"
+mkdir -p "$CACHE_DIR"
+
+repo_key() {
+  local raw_url branch owner_repo
+  raw_url=$(git remote get-url origin 2>/dev/null) || return 1
+  owner_repo=$(echo "$raw_url" | sed -E 's|.*github\.com[:/]||;s|\.git$||' | tr '/' '_')
+  branch=$(git branch --show-current 2>/dev/null) || return 1
+  echo "${owner_repo}_${branch}"
+}
+
+# Normalize SSH/HTTPS remote URL to owner/repo
+get_repo() {
+  local raw_url
+  raw_url=$(git remote get-url origin 2>/dev/null)
+  echo "$raw_url" | sed -E 's|.*github\.com[:/]||;s|\.git$||'
+}
+
+# --- Parse args ---
+
+MODE=""
+FROM_PUSH=false
 FULL=false
 for arg in "$@"; do
   case "$arg" in
-    --statusline) STATUSLINE=true ;;
+    --statusline) MODE="statusline" ;;
+    --clear-cache) MODE="clear-cache" ;;
+    --update-timing) MODE="update-timing" ;;
+    --poll) MODE="poll" ;;
+    --from-push) FROM_PUSH=true ;;
     --full) FULL=true ;;
   esac
 done
+[ -z "$MODE" ] && MODE="interactive"
 
-branch=$(git branch --show-current 2>/dev/null)
-if [ -z "$branch" ]; then
-  $STATUSLINE && exit 0
-  echo "Not on a branch"; exit 1
+# --- --statusline: read from cache (no network) ---
+
+if [ "$MODE" = "statusline" ]; then
+  key=$(repo_key 2>/dev/null) || exit 0
+  cache_file="$CACHE_DIR/${key}.status"
+  [ -f "$cache_file" ] && cat "$cache_file"
+  exit 0
 fi
 
-# Normalize SSH/HTTPS remote URL to owner/repo
-raw_url=$(git remote get-url origin 2>/dev/null)
-repo=$(echo "$raw_url" | sed -E 's|.*github\.com[:/]||;s|\.git$||')
+# --- --clear-cache: remove cache and kill poller ---
 
-# --statusline: read from cache (no network)
-if $STATUSLINE; then
-  if [ -f /tmp/ci-status-cache ]; then
-    cache_age=$(( $(date +%s) - $(stat -f %m /tmp/ci-status-cache) ))
-    [ "$cache_age" -lt 300 ] && cat /tmp/ci-status-cache
+if [ "$MODE" = "clear-cache" ]; then
+  key=$(repo_key 2>/dev/null) || exit 0
+  rm -f "$CACHE_DIR/${key}.status"
+  pid_file="$CACHE_DIR/${key}.poll-pid"
+  if [ -f "$pid_file" ]; then
+    pid=$(cat "$pid_file")
+    kill "$pid" 2>/dev/null
+    rm -f "$pid_file"
   fi
   exit 0
 fi
 
-# Full mode: make network call
+# --- --update-timing: fetch historical run durations ---
+
+if [ "$MODE" = "update-timing" ]; then
+  key=$(repo_key 2>/dev/null) || exit 1
+  repo=$(get_repo)
+  runs=$(gh run list -R "$repo" -L 50 --status completed --json workflowName,startedAt,updatedAt 2>/dev/null) || exit 1
+  timing=$(echo "$runs" | jq '
+    [ .[] | select(.startedAt != null and .updatedAt != null) |
+      { name: .workflowName,
+        dur: ( ((.updatedAt | fromdateiso8601) - (.startedAt | fromdateiso8601)) | if . < 0 then 0 else . end ) } ] |
+    group_by(.name) |
+    map({ key: .[0].name, value: { avg_seconds: (([.[].dur] | add) / length | round) } }) |
+    from_entries
+  ' 2>/dev/null)
+  [ -n "$timing" ] && echo "$timing" > "$CACHE_DIR/${key}.timing"
+  exit 0
+fi
+
+# --- --poll: background polling loop ---
+
+if [ "$MODE" = "poll" ]; then
+  key=$(repo_key 2>/dev/null) || exit 1
+  repo=$(get_repo)
+  branch=$(git branch --show-current 2>/dev/null)
+  pid_file="$CACHE_DIR/${key}.poll-pid"
+  status_file="$CACHE_DIR/${key}.status"
+  timing_file="$CACHE_DIR/${key}.timing"
+
+  # Dedup: exit if a poller is already running
+  if [ -f "$pid_file" ]; then
+    existing_pid=$(cat "$pid_file")
+    if kill -0 "$existing_pid" 2>/dev/null; then
+      exit 0
+    fi
+  fi
+  echo $$ > "$pid_file"
+
+  # Clean up PID file on exit
+  cleanup() { rm -f "$pid_file"; }
+  trap cleanup EXIT SIGTERM SIGINT
+
+  # Initial delay if from push
+  if $FROM_PUSH; then
+    sleep 10
+    "$0" --update-timing
+  fi
+
+  red='\033[1;31m'; yellow='\033[1;33m'; green='\033[1;32m'; reset='\033[0m'
+  fail_sel='.state == "FAILURE" or .state == "ERROR" or .state == "CANCELLED" or .state == "ACTION_REQUIRED" or .state == "STARTUP_FAILURE"'
+  pend_sel='.state == "PENDING" or .state == "QUEUED" or .state == "IN_PROGRESS" or .state == "WAITING" or .state == "STALE" or .state == "REQUESTED"'
+
+  start_time=$(date +%s)
+  max_duration=1800  # 30 minutes
+  max_iters=100
+  no_pr_retries=0
+  iter=0
+
+  while true; do
+    iter=$((iter + 1))
+    elapsed=$(( $(date +%s) - start_time ))
+    [ "$elapsed" -ge "$max_duration" ] && break
+    [ "$iter" -ge "$max_iters" ] && break
+
+    checks=$(gh pr checks "$branch" --repo "$repo" --json name,state 2>/dev/null)
+    if [ $? -ne 0 ] || [ -z "$checks" ]; then
+      no_pr_retries=$((no_pr_retries + 1))
+      [ "$no_pr_retries" -ge 5 ] && break
+      sleep 30
+      continue
+    fi
+    no_pr_retries=0
+
+    total=$(echo "$checks" | jq 'length')
+    fail_count=$(echo "$checks" | jq "[.[] | select($fail_sel)] | length")
+    pend_count=$(echo "$checks" | jq "[.[] | select($pend_sel)] | length")
+    pass_count=$((total - fail_count - pend_count))
+
+    # Stale check
+    pr_head=$(gh pr view "$branch" --repo "$repo" --json headRefOid -q '.headRefOid' 2>/dev/null)
+    local_head=$(git rev-parse HEAD 2>/dev/null)
+    stale=false
+    [ -n "$pr_head" ] && [ "$pr_head" != "$local_head" ] && stale=true
+
+    # Build compact status
+    cache_out=""
+    if [ "$total" -gt 0 ]; then
+      parts=()
+      [ "$fail_count" -gt 0 ] && parts+=("$(printf "${red}✗%d${reset}" "$fail_count")")
+      [ "$pass_count" -gt 0 ] && parts+=("$(printf "${green}✓%d${reset}" "$pass_count")")
+      [ "$pend_count" -gt 0 ] && parts+=("$(printf "${yellow}?%d${reset}" "$pend_count")")
+      cache_out=$(IFS=' '; echo "${parts[*]}")
+      $stale && cache_out="${cache_out}\033[2m~\033[0m"
+    fi
+    printf "%s" "$cache_out" > "$status_file"
+
+    # All checks complete? Done.
+    [ "$pend_count" -eq 0 ] && break
+
+    # Smart interval based on timing data
+    interval=30
+    if [ -f "$timing_file" ]; then
+      pending_names=$(echo "$checks" | jq -r "[.[] | select($pend_sel)] | .[].name")
+      min_remaining=999999
+      while IFS= read -r name; do
+        [ -z "$name" ] && continue
+        avg=$(jq -r --arg n "$name" '.[$n].avg_seconds // 120' "$timing_file" 2>/dev/null)
+        [ "$avg" = "null" ] && avg=120
+        remaining=$((avg - elapsed))
+        [ "$remaining" -lt 0 ] && remaining=0
+        [ "$remaining" -lt "$min_remaining" ] && min_remaining=$remaining
+      done <<< "$pending_names"
+
+      if [ "$min_remaining" -lt 30 ]; then
+        interval=10
+      elif [ "$min_remaining" -lt 120 ]; then
+        interval=20
+      elif [ "$min_remaining" -lt 300 ]; then
+        interval=45
+      else
+        interval=90
+      fi
+    fi
+
+    sleep "$interval"
+  done
+
+  exit 0
+fi
+
+# --- Interactive mode (default) ---
+
+branch=$(git branch --show-current 2>/dev/null)
+if [ -z "$branch" ]; then
+  echo "Not on a branch"; exit 1
+fi
+
+repo=$(get_repo)
+key=$(repo_key 2>/dev/null)
+
 checks=$(gh pr checks "$branch" --repo "$repo" --json name,state,link 2>/dev/null)
 if [ $? -ne 0 ] || [ -z "$checks" ]; then
   echo "No PR found for branch: $branch"; exit 1
@@ -43,13 +214,13 @@ total=$(echo "$checks" | jq 'length')
 fail_count=$(echo "$checks" | jq "[.[] | select($fail_sel)] | length")
 pend_count=$(echo "$checks" | jq "[.[] | select($pend_sel)] | length")
 
-# Stale check (done once, used in both terminal and cache)
+# Stale check
 pr_head=$(gh pr view "$branch" --repo "$repo" --json headRefOid -q '.headRefOid' 2>/dev/null)
 local_head=$(git rev-parse HEAD 2>/dev/null)
 stale=false
 [ -n "$pr_head" ] && [ "$pr_head" != "$local_head" ] && stale=true
 
-# Determine compact status for cache
+# Write compact status to cache
 pass_count=$((total - fail_count - pend_count))
 cache_out=""
 if [ "$total" -gt 0 ]; then
@@ -60,7 +231,7 @@ if [ "$total" -gt 0 ]; then
   cache_out=$(IFS=' '; echo "${parts[*]}")
   $stale && cache_out="${cache_out}\033[2m~\033[0m"
 fi
-printf "%s" "$cache_out" > /tmp/ci-status-cache
+[ -n "$key" ] && printf "%s" "$cache_out" > "$CACHE_DIR/${key}.status"
 
 # Terminal output
 show_group() {
