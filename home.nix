@@ -26,8 +26,8 @@ in
     ast-grep
     bat
     biome
-
     bun
+    delta
     eza
     fd
     # fzf installed via programs.fzf below
@@ -90,7 +90,8 @@ in
     gpom = "git pull origin main";
     gr = "git rebase";
     grom = "git rebase origin/main";
-    gdm = "git diff --stat -p origin/main";
+    gd = "git diff";
+    gdom = "git diff --stat -p origin/main";
     gs = "git status -s";
     undo = "git reset HEAD~1";
     wip = "git add . && git commit -m 'WIP'";
@@ -112,6 +113,11 @@ in
       user.email = "s.dellavalentina@gmail.com";
       pull.rebase = true;
       core.editor = "nvim";
+      core.pager = "delta";
+      interactive.diffFilter = "delta --color-only";
+      delta.navigate = true;
+      merge.conflictstyle = "diff3";
+      diff.colorMoved = "default";
       init.defaultBranch = "main";
       credential.helper = "!gh auth git-credential";
     };
