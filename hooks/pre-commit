@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "Running pre-push checks..."
+echo "Running pre-commit checks..."
 
 echo ":: nix fmt --ci"
 nix fmt -- --ci
