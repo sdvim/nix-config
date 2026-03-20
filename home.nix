@@ -291,6 +291,11 @@ in
     source = ./scripts/todo;
   };
 
+  home.file.".local/bin/tmux-edit-recent" = {
+    executable = true;
+    source = ./scripts/tmux-edit-recent;
+  };
+
   home.activation.installGitHooks = config.lib.dag.entryAfter [ "writeBoundary" ] ''
     hooks_dir="${flakeDir}/.git/hooks"
     hook_src="${flakeDir}/hooks/pre-push"
@@ -414,6 +419,9 @@ in
 
     # View live tmux-cmd output (shown as hint after 10s)
     bind-key W new-window -n "task" "tail -f /tmp/tmux-cmd-live"
+
+    # Open recently edited file in nvim (cmd+e via Ghostty)
+    bind-key E run-shell "$HOME/.local/bin/tmux-edit-recent '#{pane_current_path}' '#{pane_id}'"
 
     # Open GitHub PR for current branch in browser (cmd+r via Ghostty)
     bind-key R run-shell -b "cd '#{pane_current_path}' && gh pr view --web 2>/dev/null || tmux display-message 'No PR found for this branch'"
