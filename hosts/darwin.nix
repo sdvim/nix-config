@@ -11,7 +11,8 @@ let
   leftCommand = 30064771299; # 0x7000000E3
   leftOption = 30064771298; # 0x7000000E2
 
-  mapping = src: dst:
+  mapping =
+    src: dst:
     "<dict><key>HIDKeyboardModifierMappingSrc</key><integer>${toString src}</integer><key>HIDKeyboardModifierMappingDst</key><integer>${toString dst}</integer></dict>";
 
   # Coolermaster Novatouch TKL (VendorID 9494, ProductID 39)
@@ -19,9 +20,18 @@ let
   novaTouchHidMatching = ''{"VendorID":9494,"ProductID":39}'';
   novaTouchHidSet = builtins.toJSON {
     UserKeyMapping = [
-      { HIDKeyboardModifierMappingSrc = capsLock; HIDKeyboardModifierMappingDst = leftControl; }
-      { HIDKeyboardModifierMappingSrc = leftCommand; HIDKeyboardModifierMappingDst = leftOption; }
-      { HIDKeyboardModifierMappingSrc = leftOption; HIDKeyboardModifierMappingDst = leftCommand; }
+      {
+        HIDKeyboardModifierMappingSrc = capsLock;
+        HIDKeyboardModifierMappingDst = leftControl;
+      }
+      {
+        HIDKeyboardModifierMappingSrc = leftCommand;
+        HIDKeyboardModifierMappingDst = leftOption;
+      }
+      {
+        HIDKeyboardModifierMappingSrc = leftOption;
+        HIDKeyboardModifierMappingDst = leftCommand;
+      }
     ];
   };
 in
