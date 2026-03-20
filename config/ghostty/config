@@ -68,8 +68,6 @@ keybind = super+shift+9=text:\x02\x1b9
 keybind = super+w=text:\x02x
 keybind = super+shift+bracket_left=text:\x02p
 keybind = super+shift+bracket_right=text:\x02n
-keybind = ctrl+tab=text:\x02n
-keybind = ctrl+shift+tab=text:\x02p
 
 # Tmux panes (replaces Ghostty splits)
 keybind = super+d=text:\x02%
