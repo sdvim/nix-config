@@ -1,5 +1,6 @@
 # Font
-font-family = Lilex Nerd Font
+font-family = Berkeley Mono
+font-size = 14
 
 theme = GitHub Dark High Contrast
 background = #000000

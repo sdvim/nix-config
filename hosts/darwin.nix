@@ -22,11 +22,10 @@
   };
 
   fonts.packages = [
-    (pkgs.runCommand "berkeley-mono-nerd-font" { } ''
-      mkdir -p $out/share/fonts/truetype
-      cp ${../fonts}/*.ttf $out/share/fonts/truetype/
+    (pkgs.runCommand "berkeley-mono-font" { } ''
+      mkdir -p $out/share/fonts/opentype
+      cp ${../fonts}/*.otf $out/share/fonts/opentype/
     '')
-    pkgs.nerd-fonts.lilex
   ];
 
   programs.zsh.enable = true;
