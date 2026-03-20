@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+pane_path="${1:-}"
+pane_id="${2:-}"
+tmux_bin=/etc/profiles/per-user/stevedv/bin/tmux
+
+if [ -z "$pane_path" ] || [ -z "$pane_id" ]; then
+  "$tmux_bin" display-message "Usage: tmux-edit-recent <pane_path> <pane_id>"
+  exit 1
+fi
+
+file=""
+line=1
+
+# --- Tier 1: Parse tmux scrollback for Claude Code edit patterns ---
+# Capture last 500 lines of the pane and look for Edit/Write tool output
+scrollback="$("$tmux_bin" capture-pane -t "$pane_id" -p -S -500 2>/dev/null || true)"
+
+if [ -n "$scrollback" ]; then
+  # Match patterns like "Update(path/to/file)" or "Write(path/to/file)" or "Edit(path/to/file)"
+  # Also match "Wrote to path/to/file" and "Updated path/to/file"
+  match="$(echo "$scrollback" | grep -oE '(Update|Write|Edit)\([^)]+\)' | tail -1 || true)"
+  if [ -n "$match" ]; then
+    # Extract path from inside parens, filter out template placeholders
+    candidate="$(echo "$match" | sed 's/^[^(]*(\(.*\))$/\1/')"
+    if [ -n "$candidate" ] && [ "$candidate" != "<path>" ] && [ "$candidate" != "<file>" ]; then
+      # Resolve relative to pane_path if not absolute
+      if [[ "$candidate" = /* ]]; then
+        [ -f "$candidate" ] && file="$candidate"
+      else
+        [ -f "$pane_path/$candidate" ] && file="$pane_path/$candidate"
+      fi
+    fi
+  fi
+fi
+
+# --- Tier 2: git diff (unstaged, staged, last commit) ---
+if [ -z "$file" ] && [ -d "$pane_path/.git" ] || git -C "$pane_path" rev-parse --git-dir >/dev/null 2>&1; then
+  for diff_args in "" "--cached" "HEAD~1"; do
+    candidate="$(git -C "$pane_path" diff $diff_args --name-only 2>/dev/null | head -1 || true)"
+    if [ -n "$candidate" ] && [ -f "$pane_path/$candidate" ]; then
+      file="$pane_path/$candidate"
+      break
+    fi
+  done
+fi
+
+# --- Tier 3: Recently modified tracked files ---
+if [ -z "$file" ]; then
+  candidate="$(git -C "$pane_path" ls-files -m 2>/dev/null | head -1 || true)"
+  if [ -n "$candidate" ] && [ -f "$pane_path/$candidate" ]; then
+    file="$pane_path/$candidate"
+  fi
+fi
+
+# --- Nothing found ---
+if [ -z "$file" ]; then
+  "$tmux_bin" display-message "No recently edited file found"
+  exit 0
+fi
+
+# --- Extract line number from git diff hunk header ---
+# Get the path relative to the repo root for git diff
+rel_path="$(git -C "$pane_path" ls-files --full-name "$file" 2>/dev/null || true)"
+if [ -z "$rel_path" ]; then
+  # Try making it relative manually
+  repo_root="$(git -C "$pane_path" rev-parse --show-toplevel 2>/dev/null || true)"
+  if [ -n "$repo_root" ]; then
+    rel_path="${file#$repo_root/}"
+  fi
+fi
+
+if [ -n "$rel_path" ]; then
+  # Check unstaged diff first, then staged
+  hunk=""
+  for diff_args in "" "--cached"; do
+    hunk="$(git -C "$pane_path" diff $diff_args -U0 -- "$rel_path" 2>/dev/null | grep -m1 '^@@' || true)"
+    [ -n "$hunk" ] && break
+  done
+  if [ -n "$hunk" ]; then
+    # Parse @@ -old +new,count @@ -> extract new line number
+    diff_line="$(echo "$hunk" | sed -n 's/^@@ [^ ]* +\([0-9]*\).*/\1/p')"
+    [ -n "$diff_line" ] && line="$diff_line"
+  fi
+fi
+
+# --- Open in nvim in a split pane ---
+"$tmux_bin" split-window -v -l 40% -c "$pane_path" "nvim +$line '$file'"

@@ -36,6 +36,7 @@ keybind = super+n=new_window
 keybind = super+grave_accent=goto_window:next
 keybind = super+shift+grave_accent=text:\x02M
 keybind = super+g=text:\x02G
+keybind = super+e=text:\x02E
 keybind = super+r=text:\x02R
 keybind = super+shift+r=text:\x02\x1bR
 
