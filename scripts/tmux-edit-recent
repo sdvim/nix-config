@@ -20,11 +20,11 @@ scrollback="$("$tmux_bin" capture-pane -t "$pane_id" -p -S -500 2>/dev/null || t
 if [ -n "$scrollback" ]; then
   # Match patterns like "Update(path/to/file)" or "Write(path/to/file)" or "Edit(path/to/file)"
   # Also match "Wrote to path/to/file" and "Updated path/to/file"
-  match="$(echo "$scrollback" | grep -oE '(Update|Write|Edit)\([^)]+\)' | tail -1 || true)"
+  match="$(echo "$scrollback" | grep -oE '(Update|Write|Edit)\([^)]+\)' | grep -v '(\.\.\.)$' | tail -1 || true)"
   if [ -n "$match" ]; then
     # Extract path from inside parens, filter out template placeholders
     candidate="$(echo "$match" | sed 's/^[^(]*(\(.*\))$/\1/')"
-    if [ -n "$candidate" ] && [ "$candidate" != "<path>" ] && [ "$candidate" != "<file>" ]; then
+    if [ -n "$candidate" ] && [ "$candidate" != "<path>" ] && [ "$candidate" != "<file>" ] && [ "$candidate" != "..." ]; then
       # Resolve relative to pane_path if not absolute
       if [[ "$candidate" = /* ]]; then
         [ -f "$candidate" ] && file="$candidate"
@@ -35,15 +35,19 @@ if [ -n "$scrollback" ]; then
   fi
 fi
 
-# --- Tier 2: git diff (unstaged, staged, last commit) ---
-if [ -z "$file" ] && [ -d "$pane_path/.git" ] || git -C "$pane_path" rev-parse --git-dir >/dev/null 2>&1; then
-  for diff_args in "" "--cached" "HEAD~1"; do
-    candidate="$(git -C "$pane_path" diff $diff_args --name-only 2>/dev/null | head -1 || true)"
-    if [ -n "$candidate" ] && [ -f "$pane_path/$candidate" ]; then
-      file="$pane_path/$candidate"
-      break
-    fi
-  done
+# --- Tier 2: git diff (unstaged, staged, last commit) — most recently modified first ---
+if [ -z "$file" ] && { [ -d "$pane_path/.git" ] || git -C "$pane_path" rev-parse --git-dir >/dev/null 2>&1; }; then
+  all_candidates="$(
+    for diff_args in "" "--cached" "HEAD~1"; do
+      git -C "$pane_path" diff $diff_args --name-only 2>/dev/null || true
+    done | sort -u
+  )"
+  if [ -n "$all_candidates" ]; then
+    candidate="$(echo "$all_candidates" | while IFS= read -r f; do
+      [ -f "$pane_path/$f" ] && echo "$f" || true
+    done | xargs -I{} stat -f '%m %N' "$pane_path/{}" 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2- || true)"
+    [ -n "$candidate" ] && file="$candidate"
+  fi
 fi
 
 # --- Tier 3: Recently modified tracked files ---
@@ -86,4 +90,7 @@ if [ -n "$rel_path" ]; then
 fi
 
 # --- Open in nvim in a split pane ---
-"$tmux_bin" split-window -v -l 40% -c "$pane_path" "nvim +$line '$file'"
+# Resize the pane by ±1 row after nvim starts to force a real SIGWINCH redraw
+# (works around tmux/nvim race where nvim renders at pre-split dimensions)
+"$tmux_bin" split-window -v -l 40% -c "$pane_path" "nvim +$line '$file'" \; \
+  run-shell -b "sleep 0.2; $tmux_bin resize-pane -D 1; sleep 0.05; $tmux_bin resize-pane -U 1"
