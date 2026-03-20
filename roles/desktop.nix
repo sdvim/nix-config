@@ -7,9 +7,9 @@ let
       [ "__TERMINAL_WORKSPACE__" "__USER_HOME__" ]
       [ terminalWorkspace "/Users/${userName}" ]
       (builtins.readFile path);
+
 in
 {
-  system.keyboard.swapLeftCommandAndLeftAlt = true;
 
   # Wake-on-LAN
   networking.wakeOnLan.enable = true;

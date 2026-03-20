@@ -4,6 +4,27 @@
   userName,
   ...
 }:
+let
+  # Decimal key codes for HID modifier mapping (from IOHIDUsageTables.h)
+  capsLock = 30064771129; # 0x700000039
+  leftControl = 30064771296; # 0x7000000E0
+  leftCommand = 30064771299; # 0x7000000E3
+  leftOption = 30064771298; # 0x7000000E2
+
+  mapping = src: dst:
+    "<dict><key>HIDKeyboardModifierMappingSrc</key><integer>${toString src}</integer><key>HIDKeyboardModifierMappingDst</key><integer>${toString dst}</integer></dict>";
+
+  # Coolermaster Novatouch TKL (VendorID 9494, ProductID 39)
+  novaTouchDefaultsKey = "com.apple.keyboard.modifiermapping.9494-39-0";
+  novaTouchHidMatching = ''{"VendorID":9494,"ProductID":39}'';
+  novaTouchHidSet = builtins.toJSON {
+    UserKeyMapping = [
+      { HIDKeyboardModifierMappingSrc = capsLock; HIDKeyboardModifierMappingDst = leftControl; }
+      { HIDKeyboardModifierMappingSrc = leftCommand; HIDKeyboardModifierMappingDst = leftOption; }
+      { HIDKeyboardModifierMappingSrc = leftOption; HIDKeyboardModifierMappingDst = leftCommand; }
+    ];
+  };
+in
 {
 
   nixpkgs.config.allowUnfree = true;
@@ -159,9 +180,22 @@
   # };
 
   system.activationScripts.postActivation.text = ''
+    # Novatouch TKL: swap left cmd/alt + caps-to-ctrl (device-specific so
+    # the internal keyboard is unaffected). defaults write persists across
+    # reboots; hidutil applies immediately after the global keyboard config.
+    sudo -u ${userName} defaults -currentHost write -g \
+      ${novaTouchDefaultsKey} -array \
+      '${mapping capsLock leftControl}' \
+      '${mapping leftCommand leftOption}' \
+      '${mapping leftOption leftCommand}'
+    /usr/bin/hidutil property \
+      --matching '${novaTouchHidMatching}' \
+      --set '${novaTouchHidSet}' \
+      > /dev/null
+
     # mkdir -p /Library/Logs/Kanata
 
-    osascript -e 'tell application "System Events" to tell every desktop to set picture to POSIX file "/System/Library/Desktop Pictures/Solid Colors/Black.png"'
+    osascript -e 'tell application "System Events" to tell every desktop to set picture to POSIX file "/System/Library/Desktop Pictures/Solid Colors/Black.png"' 2>/dev/null || true
 
     # Exclude git directory from Spotlight indexing
     GIT_PARENT="${builtins.dirOf flakeDir}"
