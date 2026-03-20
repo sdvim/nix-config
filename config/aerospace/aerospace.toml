@@ -25,6 +25,9 @@ accordion-padding = 30
 # Workspaces: dedicated terminal workspace plus three numeric workspaces
 persistent-workspaces = ['__TERMINAL_WORKSPACE__', '1', '2', '3']
 
+[workspace-to-monitor-force-assignment]
+'__TERMINAL_WORKSPACE__' = ['secondary', 'main']
+
 [key-mapping]
 preset = 'qwerty'
 
