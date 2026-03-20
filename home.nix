@@ -93,8 +93,8 @@ in
     gpom = "git pull origin main";
     gr = "git rebase";
     grom = "git rebase origin/main";
-    gd = "git diff";
-    gdom = "git diff --stat -p origin/main";
+    gd = "git diff --diff-filter=d; git diff --diff-filter=D --name-status; git ls-files --others --exclude-standard | sed 's/^/??\t/'";
+    gdom = "git diff --diff-filter=d --stat -p origin/main; git diff --diff-filter=D --name-status origin/main; git ls-files --others --exclude-standard | sed 's/^/??\t/'";
     gs = "git status -s";
     undo = "git reset HEAD~1";
     wip = "git add . && git commit -m 'WIP'";
@@ -298,8 +298,8 @@ in
 
   home.activation.installGitHooks = config.lib.dag.entryAfter [ "writeBoundary" ] ''
     hooks_dir="${flakeDir}/.git/hooks"
-    hook_src="${flakeDir}/hooks/pre-push"
-    hook_dst="$hooks_dir/pre-push"
+    hook_src="${flakeDir}/hooks/pre-commit"
+    hook_dst="$hooks_dir/pre-commit"
     if [ -d "$hooks_dir" ] && [ ! "$hook_dst" -ef "$hook_src" ]; then
       ln -sf "$hook_src" "$hook_dst"
     fi
@@ -551,6 +551,7 @@ in
         ahead = "⇡\${count}";
         behind = "⇣\${count}";
         diverged = "⇡\${ahead_count}⇣\${behind_count}";
+        deleted = "×";
       };
 
       cmd_duration = {
