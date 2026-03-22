@@ -240,18 +240,41 @@ else
 fi
 
 # ──────────────────────────────────────────────
-# 7. SSH key generation + GitHub upload
+# 7. SSH key setup + GitHub verification
 # ──────────────────────────────────────────────
-if [[ -f "$HOME/.ssh/id_ed25519" ]]; then
-  info "SSH key already exists."
-else
-  if ask "Generate SSH key and add to GitHub?"; then
+if [[ ! -f "$HOME/.ssh/id_ed25519" ]]; then
+  if ask "Generate SSH key?"; then
     ssh-keygen -t ed25519 -C "$(hostname -s)" -f "$HOME/.ssh/id_ed25519" -N ""
-    ssh-keyscan github.com >> "$HOME/.ssh/known_hosts" 2>/dev/null
-    gh ssh-key add "$HOME/.ssh/id_ed25519.pub" --title "$(hostname -s)"
-    info "SSH key generated and added to GitHub."
+    info "SSH key generated."
   else
     skip
+  fi
+fi
+
+if [[ -f "$HOME/.ssh/id_ed25519.pub" ]]; then
+  # Ensure github.com is in known_hosts
+  if ! grep -q github.com "$HOME/.ssh/known_hosts" 2>/dev/null; then
+    ssh-keyscan github.com >> "$HOME/.ssh/known_hosts" 2>/dev/null
+  fi
+
+  # Check if local key is registered on GitHub
+  LOCAL_KEY="$(awk '{print $2}' "$HOME/.ssh/id_ed25519.pub")"
+  if gh ssh-key list 2>/dev/null | grep -q "$LOCAL_KEY"; then
+    info "SSH key is already registered on GitHub."
+  else
+    if ask "Add SSH key to GitHub?"; then
+      gh ssh-key add "$HOME/.ssh/id_ed25519.pub" --title "$(hostname -s)"
+      info "SSH key added to GitHub."
+    else
+      skip
+    fi
+  fi
+
+  # Verify SSH connection to GitHub
+  if ssh -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
+    info "SSH connection to GitHub verified."
+  else
+    warn "SSH connection to GitHub failed. You may need to troubleshoot manually."
   fi
 fi
 
