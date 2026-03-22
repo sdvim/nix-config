@@ -19,7 +19,7 @@ rebuild
 - `hosts/mini.nix` — Mini-specific overrides (e.g. keyboard remapping)
 - `home.nix` — User-level config: packages, git, starship, tmux, ghostty, gh
 - `config/` — Raw config files managed via `home.file` (e.g. ghostty)
-- `fonts/` — Berkeley Mono Nerd Font TTFs (encrypted via git-crypt)
+- `fonts/` — Berkeley Mono Nerd Font OTFs (encrypted via git-crypt)
 
 ## git-crypt
 
