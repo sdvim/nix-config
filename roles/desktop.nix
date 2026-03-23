@@ -18,14 +18,14 @@ in
     "displayplacer"
   ];
 
-  # Mini's display layout (other desktops override via lib.mkForce or host modules)
+  # Pro's display layout
   launchd.agents.display-config = {
     serviceConfig = {
       Label = "org.displayplacer.config";
       ProgramArguments = [
         "/opt/homebrew/bin/displayplacer"
-        "id:E1396AC8-A085-4A7F-B15A-DDE242FDA8A8 res:2560x1440 hz:60 color_depth:8 scaling:on origin:(0,0) degree:0"
-        "id:48AFCCAF-DFDC-41D7-988C-E45717000DD1 res:3440x1440 hz:60 color_depth:8 scaling:off origin:(-440,-1440) degree:180"
+        "id:1D1C74AB-4B77-468F-996C-B1692B6AB419 res:2560x1440 hz:60 color_depth:8 scaling:on origin:(0,0) degree:0"
+        "id:E2BEC5A2-3C20-413F-AB1F-7795F470DCB5 res:3440x1440 hz:60 color_depth:8 scaling:off origin:(-440,-1440) degree:180"
       ];
       RunAtLoad = true;
       StandardOutPath = "/tmp/displayplacer.log";
