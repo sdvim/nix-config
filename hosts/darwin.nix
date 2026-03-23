@@ -17,23 +17,6 @@ let
 
   # Coolermaster Novatouch TKL (VendorID 9494, ProductID 39)
   novaTouchDefaultsKey = "com.apple.keyboard.modifiermapping.9494-39-0";
-  novaTouchHidMatching = ''{"VendorID":9494,"ProductID":39}'';
-  novaTouchHidSet = builtins.toJSON {
-    UserKeyMapping = [
-      {
-        HIDKeyboardModifierMappingSrc = capsLock;
-        HIDKeyboardModifierMappingDst = leftControl;
-      }
-      {
-        HIDKeyboardModifierMappingSrc = leftCommand;
-        HIDKeyboardModifierMappingDst = leftOption;
-      }
-      {
-        HIDKeyboardModifierMappingSrc = leftOption;
-        HIDKeyboardModifierMappingDst = leftCommand;
-      }
-    ];
-  };
 in
 {
 
@@ -190,18 +173,13 @@ in
   # };
 
   system.activationScripts.postActivation.text = ''
-    # Novatouch TKL: swap left cmd/alt + caps-to-ctrl (device-specific so
-    # the internal keyboard is unaffected). defaults write persists across
-    # reboots; hidutil applies immediately after the global keyboard config.
+    # Novatouch TKL: persist cmd/alt swap via macOS defaults (applies on
+    # device connect/reboot; caps-to-ctrl handled globally by system.keyboard)
     sudo -u ${userName} defaults -currentHost write -g \
       ${novaTouchDefaultsKey} -array \
       '${mapping capsLock leftControl}' \
       '${mapping leftCommand leftOption}' \
       '${mapping leftOption leftCommand}'
-    /usr/bin/hidutil property \
-      --matching '${novaTouchHidMatching}' \
-      --set '${novaTouchHidSet}' \
-      > /dev/null
 
     # mkdir -p /Library/Logs/Kanata
 
