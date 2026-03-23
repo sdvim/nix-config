@@ -9,7 +9,7 @@ while IFS=$'\t' read -r pane_id cmd waiting; do
       result+="!"
       has_alert=1
     else
-      result+="✱"
+      result+="✻"
     fi
   fi
 done < <(tmux list-panes -t "$window" -F '#{pane_id}	#{pane_current_command}	#{@claude_waiting}' 2>/dev/null)

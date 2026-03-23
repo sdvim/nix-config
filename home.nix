@@ -101,6 +101,7 @@ in
     rwt = "suffix=$(basename \"$(pwd)\" | sed 's/.*-//') && git checkout \"main-$suffix\" && git pull origin main && git fetch --prune";
 
     c = "claude --allow-dangerously-skip-permissions --permission-mode plan";
+    cdf = "cd \"$(fd --type d --hidden false | fzf)\"";
     cx = "codex --dangerously-bypass-approvals-and-sandbox";
   };
 
@@ -512,13 +513,6 @@ in
         }
         export GPG_TTY=$(tty)
       ''
-      (lib.mkOrder 950 ''
-        # Rebind fzf cd widget from Alt+C to Ctrl+F (after fzf at 910)
-        bindkey -r '\ec'
-        if zle -la | grep -q fzf-cd-widget; then
-          bindkey '^F' fzf-cd-widget
-        fi
-      '')
     ];
   };
 
