@@ -273,11 +273,6 @@ in
     text = renderTemplate ./scripts/aerospace-terminal-toggle;
   };
 
-  home.file.".local/bin/aerospace-workspace-caps" = {
-    executable = true;
-    text = renderTemplate ./scripts/aerospace-workspace-caps;
-  };
-
   home.file.".local/bin/aerospace-monitor-swap" = {
     executable = true;
     source = ./scripts/aerospace-monitor-swap;
