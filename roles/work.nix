@@ -11,6 +11,5 @@
 
   home-manager.users.${userName}.home.packages = with pkgs; [
     eas-cli
-    mise
   ];
 }
