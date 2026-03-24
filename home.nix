@@ -37,6 +37,7 @@ in
     gh
     git-crypt
     gnupg
+    google-cloud-sdk
     pinentry_mac
     jq
     # kanata
@@ -584,6 +585,16 @@ in
   programs.zoxide = {
     enable = true;
     enableZshIntegration = true;
+  };
+
+  programs.mise = {
+    enable = true;
+    enableZshIntegration = true;
+    globalConfig = {
+      tools = {
+        go = "latest";
+      };
+    };
   };
 
   programs.gh = {
