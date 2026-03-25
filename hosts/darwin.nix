@@ -127,7 +127,7 @@ in
     taps = [
       "nikitabobko/tap"
     ];
-    brews = [ ];
+    brews = [ "mas" ];
     casks = [
       "nikitabobko/tap/aerospace"
       "1password"
