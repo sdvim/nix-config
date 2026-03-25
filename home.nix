@@ -443,11 +443,12 @@ in
     set -g history-limit 50000
 
     # Session persistence (resurrect + continuum)
-    run-shell ${pkgs.tmuxPlugins.resurrect}/share/tmux-plugins/resurrect/resurrect.tmux
-    run-shell ${pkgs.tmuxPlugins.continuum}/share/tmux-plugins/continuum/continuum.tmux
+    # Options must be set before run-shell so plugins see them during init
     set -g @resurrect-capture-pane-contents 'on'
     set -g @continuum-restore 'on'
     set -g @continuum-save-interval '10'
+    run-shell ${pkgs.tmuxPlugins.resurrect}/share/tmux-plugins/resurrect/resurrect.tmux
+    run-shell ${pkgs.tmuxPlugins.continuum}/share/tmux-plugins/continuum/continuum.tmux
   '';
 
   programs.zsh = {
