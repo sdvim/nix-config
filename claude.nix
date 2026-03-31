@@ -5,6 +5,17 @@
     source = ./scripts/claude-statusline.sh;
   };
 
+  home.file.".claude/keybindings.json".text = builtins.toJSON {
+    bindings = [
+      {
+        context = "Chat";
+        bindings = {
+          "ctrl+j" = "chat:newline";
+        };
+      }
+    ];
+  };
+
   # Runtime overrides go in ~/.claude/settings.local.json
   home.file.".claude/settings.json".text = builtins.toJSON {
     skipDangerousModePermissionPrompt = true;
