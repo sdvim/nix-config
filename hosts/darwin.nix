@@ -138,8 +138,6 @@ in
       "homerow"
       "obsidian"
       "wispr-flow"
-
-      # "karabiner-elements"  # requires interactive sudo for pkg install
     ];
     onActivation.cleanup = "zap";
   };
@@ -158,21 +156,6 @@ in
     };
   };
 
-  # launchd.daemons.kanata = {
-  #   serviceConfig = {
-  #     Label = "org.kanata.daemon";
-  #     ProgramArguments = [
-  #       "/etc/profiles/per-user/${userName}/bin/kanata"
-  #       "-c"
-  #       "/Users/${userName}/.config/kanata/kanata.kbd"
-  #     ];
-  #     RunAtLoad = true;
-  #     KeepAlive = true;
-  #     StandardOutPath = "/Library/Logs/Kanata/kanata.out.log";
-  #     StandardErrorPath = "/Library/Logs/Kanata/kanata.err.log";
-  #   };
-  # };
-
   system.activationScripts.postActivation.text = ''
     # Novatouch TKL: persist cmd/alt swap via macOS defaults (applies on
     # device connect/reboot; caps-to-ctrl handled globally by system.keyboard)
@@ -181,8 +164,6 @@ in
       '${mapping capsLock leftControl}' \
       '${mapping leftCommand leftOption}' \
       '${mapping leftOption leftCommand}'
-
-    # mkdir -p /Library/Logs/Kanata
 
     osascript -e 'tell application "System Events" to tell every desktop to set picture to POSIX file "/System/Library/Desktop Pictures/Solid Colors/Black.png"' 2>/dev/null || true
 

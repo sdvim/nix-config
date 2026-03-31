@@ -3,7 +3,7 @@ set -euo pipefail
 
 pane_path="${1:-}"
 pane_id="${2:-}"
-tmux_bin=/etc/profiles/per-user/stevedv/bin/tmux
+tmux_bin=/etc/profiles/per-user/$USER/bin/tmux
 
 if [ -z "$pane_path" ] || [ -z "$pane_id" ]; then
   "$tmux_bin" display-message "Usage: tmux-edit-recent <pane_path> <pane_id>"

@@ -40,7 +40,6 @@ in
     google-cloud-sdk
     pinentry_mac
     jq
-    # kanata
     lazygit
     lua5_1
     luarocks
@@ -312,7 +311,6 @@ in
   home.file.".config/aerospace/aerospace.toml".text = lib.mkDefault (
     renderTemplate ./config/aerospace/aerospace.toml
   );
-  # home.file.".config/kanata/kanata.kbd".source = ./config/kanata/kanata.kbd;
   home.file.".config/ghostty/config".text = lib.mkDefault (builtins.readFile ./config/ghostty/config);
   home.file.".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${flakeDir}/config/nvim";
 
@@ -351,8 +349,6 @@ in
     set -g window-status-current-style 'bold'
     set -g window-status-style 'dim'
     set-hook -g pane-focus-in 'run-shell -b "P=$(tmux display -p \"#{pane_id}\"); tmux set-option -p -u @claude_waiting 2>/dev/null; grep -vxF $P /tmp/tmux-claude-queue > /tmp/tmux-claude-queue.tmp 2>/dev/null && mv /tmp/tmux-claude-queue.tmp /tmp/tmux-claude-queue || rm -f /tmp/tmux-claude-queue.tmp; tmux refresh-client -S"'
-    # set-hook -g client-resized 'run-shell -b "$HOME/.local/bin/tmux-responsive-layout"'
-
     # Dim pane borders
     set -g pane-border-style 'fg=colour238'
     set -g pane-active-border-style 'fg=colour238'

@@ -17,6 +17,6 @@ alias_dir "$dir" "nix-config" "nix" && exit
 alias_dir "$dir" "courtyard-frontend" "cyfe" && exit
 
 case "$dir" in
-  /Users/stevedv) echo "~" ;;
+  "$HOME") echo "~" ;;
   *)              basename "$dir" ;;
 esac

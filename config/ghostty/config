@@ -83,4 +83,4 @@ keybind = shift+enter=text:\x1b[13;2u
 initial-window = true
 
 # Launch into tmux
-command = /Users/stevedv/.local/bin/tmux-session
+command = ~/.local/bin/tmux-session
