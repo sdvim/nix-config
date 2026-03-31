@@ -17,8 +17,9 @@ rebuild
 - `hosts/darwin.nix` — Shared system-level config: macOS defaults, keyboard, dock, finder, homebrew casks, fonts
 - `hosts/air.nix` — Air-specific overrides
 - `hosts/mini.nix` — Mini-specific overrides (e.g. keyboard remapping)
+- `claude.nix` — Claude Code integration: statusline, hooks, keybindings
 - `home.nix` — User-level config: packages, git, starship, tmux, ghostty, gh
-- `config/` — Raw config files managed via `home.file` (e.g. ghostty)
+- `config/` — Raw config files managed via `home.file` (e.g. ghostty, nvim)
 - `fonts/` — Berkeley Mono Nerd Font OTFs (encrypted via git-crypt)
 
 ## git-crypt

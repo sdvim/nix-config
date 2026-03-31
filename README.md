@@ -38,7 +38,7 @@ sudo darwin-rebuild switch --flake ~/Git/nix-config#<hostname>
 - `hosts/air.nix` — Air-specific overrides
 - `hosts/mini.nix` — Mini-specific overrides (e.g. keyboard remapping)
 - `home.nix` — User-level config: packages, git, starship, tmux, ghostty, gh
-- `config/` — Raw config files managed via `home.file` (e.g. ghostty, kanata, nvim)
+- `config/` — Raw config files managed via `home.file` (e.g. ghostty, nvim)
 - `fonts/` — Berkeley Mono Nerd Font TTFs (encrypted via git-crypt)
 - `setup.sh` — Bootstrap script for fresh machines (supports `curl | bash`)
 
