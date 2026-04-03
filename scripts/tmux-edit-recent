@@ -15,7 +15,11 @@ line=1
 
 # --- Tier 1: Parse tmux scrollback for Claude Code edit patterns ---
 # Capture last 500 lines of the pane and look for Edit/Write tool output
-scrollback="$("$tmux_bin" capture-pane -t "$pane_id" -p -S -500 2>/dev/null || true)"
+scrollback="$("$tmux_bin" capture-pane -t "$pane_id" -p -S -500 2>/dev/null | awk '
+  prev ~ /(Update|Write|Edit)\([^)]*$/ { gsub(/^[[:space:]]+/, ""); prev = prev $0; next }
+  { if (prev != "") print prev; prev = $0 }
+  END { if (prev != "") print prev }
+' || true)"
 
 if [ -n "$scrollback" ]; then
   # Match patterns like "Update(path/to/file)" or "Write(path/to/file)" or "Edit(path/to/file)"
