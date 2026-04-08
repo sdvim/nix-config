@@ -48,6 +48,7 @@ in
     nodePackages.neovim
     nodejs_24
     pnpm
+    yarn-berry
     ripgrep
     tealdeer
     tmux
@@ -57,7 +58,6 @@ in
     turbo
     vhs
     wget
-    yarn
     zsh-completions
     # codex installed via homebrew cask
   ];
