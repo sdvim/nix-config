@@ -36,6 +36,7 @@ in
     # fzf installed via programs.fzf below
     gh
     git-crypt
+    helix
     gnupg
     google-cloud-sdk
     pinentry_mac
@@ -46,9 +47,6 @@ in
     mermaid-cli
     neovim
     nodePackages.neovim
-    nodejs_24
-    pnpm
-    yarn-berry
     ripgrep
     tealdeer
     tmux

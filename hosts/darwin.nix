@@ -27,6 +27,11 @@ in
   ];
   nix.settings.warn-dirty = false;
 
+  environment.systemPackages = with pkgs; [
+    nodejs_24
+    corepack_24
+  ];
+
   environment.systemPath = [ "/opt/homebrew/bin" ];
 
   system.primaryUser = userName;
