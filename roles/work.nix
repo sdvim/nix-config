@@ -9,7 +9,7 @@
   homebrew.casks = [
     "android-studio"
     "figma"
-    "visual-studio-code"
+    "zed"
     "zulu@17"
   ];
 
