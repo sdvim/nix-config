@@ -2,95 +2,128 @@
 set -euo pipefail
 
 pane_path="${1:-}"
-pane_id="${2:-}"
+caller_pane="${2:-}"
 tmux_bin=/etc/profiles/per-user/stevedv/bin/tmux
 
-if [ -z "$pane_path" ] || [ -z "$pane_id" ]; then
+if [ -z "$pane_path" ] || [ -z "$caller_pane" ]; then
   "$tmux_bin" display-message "Usage: tmux-edit-recent <pane_path> <pane_id>"
   exit 1
 fi
 
-file=""
-line=1
+current_window="$("$tmux_bin" display -t "$caller_pane" -p '#{window_id}')"
 
-# --- Tier 1: Parse tmux scrollback for Claude Code edit patterns ---
-# Capture last 500 lines of the pane and look for Edit/Write tool output
-scrollback="$("$tmux_bin" capture-pane -t "$pane_id" -p -S -500 2>/dev/null || true)"
+# --- File detection function (tiers 1/2/3 + line extraction) ---
+detect_file() {
+  file=""
+  line=1
 
-if [ -n "$scrollback" ]; then
-  # Match patterns like "Update(path/to/file)" or "Write(path/to/file)" or "Edit(path/to/file)"
-  # Also match "Wrote to path/to/file" and "Updated path/to/file"
-  match="$(echo "$scrollback" | grep -oE '(Update|Write|Edit)\([^)]+\)' | grep -v '(\.\.\.)$' | tail -1 || true)"
-  if [ -n "$match" ]; then
-    # Extract path from inside parens, filter out template placeholders
-    candidate="$(echo "$match" | sed 's/^[^(]*(\(.*\))$/\1/')"
-    if [ -n "$candidate" ] && [ "$candidate" != "<path>" ] && [ "$candidate" != "<file>" ] && [ "$candidate" != "..." ]; then
-      # Resolve relative to pane_path if not absolute
-      if [[ "$candidate" = /* ]]; then
-        [ -f "$candidate" ] && file="$candidate"
-      else
-        [ -f "$pane_path/$candidate" ] && file="$pane_path/$candidate"
+  # Tier 1: Parse tmux scrollback for Claude Code edit patterns
+  scrollback="$("$tmux_bin" capture-pane -t "$caller_pane" -p -S -500 2>/dev/null || true)"
+  if [ -n "$scrollback" ]; then
+    match="$(echo "$scrollback" | grep -oE '(Update|Write|Edit)\([^)]+\)' | grep -v '(\.\.\.)$' | tail -1 || true)"
+    if [ -n "$match" ]; then
+      candidate="$(echo "$match" | sed 's/^[^(]*(\(.*\))$/\1/')"
+      if [ -n "$candidate" ] && [ "$candidate" != "<path>" ] && [ "$candidate" != "<file>" ] && [ "$candidate" != "..." ]; then
+        if [[ "$candidate" = /* ]]; then
+          [ -f "$candidate" ] && file="$candidate"
+        else
+          [ -f "$pane_path/$candidate" ] && file="$pane_path/$candidate"
+        fi
       fi
     fi
   fi
-fi
 
-# --- Tier 2: git diff (unstaged, staged, last commit) — most recently modified first ---
-if [ -z "$file" ] && { [ -d "$pane_path/.git" ] || git -C "$pane_path" rev-parse --git-dir >/dev/null 2>&1; }; then
-  all_candidates="$(
-    for diff_args in "" "--cached" "HEAD~1"; do
-      git -C "$pane_path" diff $diff_args --name-only 2>/dev/null || true
-    done | sort -u
-  )"
-  if [ -n "$all_candidates" ]; then
-    candidate="$(echo "$all_candidates" | while IFS= read -r f; do
-      [ -f "$pane_path/$f" ] && echo "$f" || true
-    done | xargs -I{} stat -f '%m %N' "$pane_path/{}" 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2- || true)"
-    [ -n "$candidate" ] && file="$candidate"
+  # Tier 2: git diff (unstaged, staged, last commit) — most recently modified first
+  if [ -z "$file" ] && { [ -d "$pane_path/.git" ] || git -C "$pane_path" rev-parse --git-dir >/dev/null 2>&1; }; then
+    all_candidates="$(
+      for diff_args in "" "--cached" "HEAD~1"; do
+        git -C "$pane_path" diff $diff_args --name-only 2>/dev/null || true
+      done | sort -u
+    )"
+    if [ -n "$all_candidates" ]; then
+      candidate="$(echo "$all_candidates" | while IFS= read -r f; do
+        [ -f "$pane_path/$f" ] && echo "$f" || true
+      done | xargs -I{} stat -f '%m %N' "$pane_path/{}" 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2- || true)"
+      [ -n "$candidate" ] && file="$candidate"
+    fi
+  fi
+
+  # Tier 3: Recently modified tracked files
+  if [ -z "$file" ]; then
+    candidate="$(git -C "$pane_path" ls-files -m 2>/dev/null | head -1 || true)"
+    if [ -n "$candidate" ] && [ -f "$pane_path/$candidate" ]; then
+      file="$pane_path/$candidate"
+    fi
+  fi
+
+  # Extract line number from git diff hunk header
+  if [ -n "$file" ]; then
+    rel_path="$(git -C "$pane_path" ls-files --full-name "$file" 2>/dev/null || true)"
+    if [ -z "$rel_path" ]; then
+      repo_root="$(git -C "$pane_path" rev-parse --show-toplevel 2>/dev/null || true)"
+      [ -n "$repo_root" ] && rel_path="${file#$repo_root/}"
+    fi
+    if [ -n "$rel_path" ]; then
+      hunk=""
+      for diff_args in "" "--cached"; do
+        hunk="$(git -C "$pane_path" diff $diff_args -U0 -- "$rel_path" 2>/dev/null | grep -m1 '^@@' || true)"
+        [ -n "$hunk" ] && break
+      done
+      if [ -n "$hunk" ]; then
+        diff_line="$(echo "$hunk" | sed -n 's/^@@ [^ ]* +\([0-9]*\).*/\1/p')"
+        [ -n "$diff_line" ] && line="$diff_line"
+      fi
+    fi
+  fi
+}
+
+# --- Check for existing editor pane ---
+edit_pane="$("$tmux_bin" show -wqv -t "$current_window" @edit_pane 2>/dev/null || true)"
+
+# Verify pane is still alive
+if [ -n "$edit_pane" ]; then
+  if ! "$tmux_bin" display -t "$edit_pane" -p '#{pane_id}' >/dev/null 2>&1; then
+    "$tmux_bin" set-option -wu -t "$current_window" @edit_pane 2>/dev/null || true
+    edit_pane=""
   fi
 fi
 
-# --- Tier 3: Recently modified tracked files ---
-if [ -z "$file" ]; then
-  candidate="$(git -C "$pane_path" ls-files -m 2>/dev/null | head -1 || true)"
-  if [ -n "$candidate" ] && [ -f "$pane_path/$candidate" ]; then
-    file="$pane_path/$candidate"
+if [ -n "$edit_pane" ]; then
+  # Pane exists — check if it's in the current window (visible) or hidden
+  edit_pane_window="$("$tmux_bin" display -t "$edit_pane" -p '#{window_id}' 2>/dev/null || true)"
+
+  if [ -z "$edit_pane_window" ]; then
+    # Pane died between the check and here (race condition)
+    "$tmux_bin" set-option -wu -t "$current_window" @edit_pane 2>/dev/null || true
+    edit_pane=""
+  elif [ "$edit_pane_window" = "$current_window" ]; then
+    # HIDE: break nvim pane to a hidden window
+    "$tmux_bin" break-pane -d -s "$edit_pane" 2>/dev/null || true
+    exit 0
+  else
+    # SHOW: bring hidden nvim pane back
+    detect_file
+    if [ -n "$file" ]; then
+      "$tmux_bin" send-keys -t "$edit_pane" Escape
+      "$tmux_bin" send-keys -t "$edit_pane" ":edit +$line $file" Enter
+    fi
+    "$tmux_bin" join-pane -v -l 40% -s "$edit_pane" -t "$caller_pane"
+    "$tmux_bin" run-shell -b \
+      "sleep 0.2; nvim_pid=\$($tmux_bin display -t $edit_pane -p '#{pane_pid}'); kill -WINCH \$nvim_pid 2>/dev/null || true"
+    exit 0
   fi
 fi
 
-# --- Nothing found ---
+# --- SPAWN: No existing editor pane ---
+detect_file
+
 if [ -z "$file" ]; then
   "$tmux_bin" display-message "No recently edited file found"
   exit 0
 fi
 
-# --- Extract line number from git diff hunk header ---
-# Get the path relative to the repo root for git diff
-rel_path="$(git -C "$pane_path" ls-files --full-name "$file" 2>/dev/null || true)"
-if [ -z "$rel_path" ]; then
-  # Try making it relative manually
-  repo_root="$(git -C "$pane_path" rev-parse --show-toplevel 2>/dev/null || true)"
-  if [ -n "$repo_root" ]; then
-    rel_path="${file#$repo_root/}"
-  fi
-fi
-
-if [ -n "$rel_path" ]; then
-  # Check unstaged diff first, then staged
-  hunk=""
-  for diff_args in "" "--cached"; do
-    hunk="$(git -C "$pane_path" diff $diff_args -U0 -- "$rel_path" 2>/dev/null | grep -m1 '^@@' || true)"
-    [ -n "$hunk" ] && break
-  done
-  if [ -n "$hunk" ]; then
-    # Parse @@ -old +new,count @@ -> extract new line number
-    diff_line="$(echo "$hunk" | sed -n 's/^@@ [^ ]* +\([0-9]*\).*/\1/p')"
-    [ -n "$diff_line" ] && line="$diff_line"
-  fi
-fi
-
-# --- Open in nvim in a split pane ---
-# Resize the pane by ±1 row after nvim starts to force a real SIGWINCH redraw
-# (works around tmux/nvim race where nvim renders at pre-split dimensions)
-"$tmux_bin" split-window -v -l 40% -c "$pane_path" "nvim +$line '$file'" \; \
-  run-shell -b "sleep 0.2; $tmux_bin resize-pane -D 1; sleep 0.05; $tmux_bin resize-pane -U 1"
+new_pane="$("$tmux_bin" split-window -v -l 40% -c "$pane_path" -P -F '#{pane_id}' \
+  "nvim +$line '$file'")"
+"$tmux_bin" set-option -w -t "$current_window" @edit_pane "$new_pane"
+"$tmux_bin" run-shell -b \
+  "sleep 0.2; nvim_pid=\$($tmux_bin display -t $new_pane -p '#{pane_pid}'); kill -WINCH \$nvim_pid 2>/dev/null || true"

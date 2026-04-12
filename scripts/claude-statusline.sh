@@ -11,4 +11,4 @@ if [ -n "$ci_status" ]; then
   export CI_STATUS="$ci_status"
 fi
 
-STARSHIP_SHELL= starship prompt
+STARSHIP_SHELL= starship prompt | sed 's/ ›$//'

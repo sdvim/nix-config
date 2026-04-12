@@ -17,9 +17,6 @@ enable-normalization-opposite-orientation-for-nested-containers = true
 default-root-container-layout = 'tiles'
 default-root-container-orientation = 'horizontal'
 
-# Accordion padding (only used if you switch to accordion mode)
-accordion-padding = 30
-
 # Do not warp the cursor when focus moves across monitors
 
 # Workspaces: dedicated terminal workspace plus three numeric workspaces
@@ -48,10 +45,6 @@ alt-shift-leftSquareBracket = ['join-with left', 'mode main']
 alt-shift-rightSquareBracket = ['join-with right', 'mode main']
 
 [mode.main.binding]
-# Layout toggles
-alt-slash = 'layout tiles horizontal vertical'
-alt-comma = 'layout accordion horizontal vertical'
-
 # Focus left/right - crosses monitor boundaries, wraps around
 ctrl-leftSquareBracket = 'focus --boundaries all-monitors-outer-frame --boundaries-action wrap-around-all-monitors left'
 ctrl-rightSquareBracket = 'focus --boundaries all-monitors-outer-frame --boundaries-action wrap-around-all-monitors right'
