@@ -88,6 +88,7 @@
         hostName = "pro";
         computerName = "Steve's Macbook Pro";
         roles = [
+          ./roles/laptop.nix
           ./roles/desktop.nix
           ./roles/work.nix
         ];

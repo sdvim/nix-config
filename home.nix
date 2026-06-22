@@ -313,7 +313,7 @@ in
   home.file.".config/aerospace/aerospace.toml".text = lib.mkDefault (
     renderTemplate ./config/aerospace/aerospace.toml
   );
-  # home.file.".config/ghostty/config".text = lib.mkDefault (builtins.readFile ./config/ghostty/config);
+  home.file.".config/ghostty/config".text = lib.mkDefault (builtins.readFile ./config/ghostty/config);
   home.file.".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${flakeDir}/config/nvim";
 
   home.file.".tmux.conf".text = ''
