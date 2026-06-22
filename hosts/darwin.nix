@@ -136,7 +136,9 @@ in
     casks = [
       "nikitabobko/tap/aerospace"
       "1password"
+      "beeper"
       "claude"
+      "cmux"
       "codex"
       "ghostty"
       "helium-browser"

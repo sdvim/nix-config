@@ -1,9 +1,14 @@
 { pkgs, userName, ... }:
+let
+  xcodeVersion = "26.3";
+in
 {
   homebrew.brews = [
+    "aria2"
     "bazelisk"
     "cocoapods"
     "watchman"
+    "xcodes"
   ];
 
   homebrew.casks = [
@@ -23,10 +28,20 @@
     ];
     home.sessionVariables = {
       ANDROID_HOME = "$HOME/Library/Android/sdk";
+      XCODE_VERSION = xcodeVersion;
     };
     home.sessionPath = [
       "$HOME/Library/Android/sdk/platform-tools"
       "$HOME/Library/Android/sdk/emulator"
     ];
   };
+
+  system.activationScripts.postActivation.text = ''
+    if [ ! -d "/Applications/Xcode-${xcodeVersion}.app" ] && [ ! -d "/Applications/Xcode.app" ]; then
+      echo ""
+      echo "  Xcode ${xcodeVersion} not installed."
+      echo "  Run:  xcodes install ${xcodeVersion} && sudo xcodes select ${xcodeVersion}"
+      echo ""
+    fi
+  '';
 }

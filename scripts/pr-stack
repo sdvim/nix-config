@@ -1,0 +1,199 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage: pr-stack [--bare|--no-fence] [--repo OWNER/REPO] [PR|branch|url]
+
+Print a stacked GitHub PR list as markdown:
+  - [PR#123](https://github.com/owner/repo/pull/123) / ENG-123 Title `+10 -2`
+
+Defaults to the current branch's PR and walks upward by finding a PR whose
+head branch matches each PR's base branch. LoC stats are GitHub PR additions
+and deletions against each PR's immediate base.
+EOF
+}
+
+require_cmd() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    echo "Missing dependency: $1" >&2
+    exit 1
+  fi
+}
+
+normalize_title() {
+  local title="$1"
+
+  printf '%s\n' "$title" | sed -E \
+    -e 's/^\[([A-Z]+-[0-9]+)\][[:space:]]*/\1 /' \
+    -e 's/^([A-Z]+-[0-9]+)[[:space:]]*:[[:space:]]*/\1 /' \
+    -e 's/^([A-Z]+-[0-9]+)[[:space:]]+-[[:space:]]*/\1 /' \
+    -e 's/[[:space:]]+/ /g'
+}
+
+repo_from_remote() {
+  local raw_url
+  raw_url="$(git remote get-url origin 2>/dev/null)" || return 1
+  printf '%s\n' "$raw_url" | sed -E 's|.*github\.com[:/]||;s|\.git$||'
+}
+
+pr_json_for_selector() {
+  local selector="$1"
+  gh pr view "$selector" \
+    --repo "$repo" \
+    --json number,title,baseRefName,headRefName,url,additions,deletions
+}
+
+pr_json_for_head() {
+  local head="$1"
+  local number
+
+  number="$(
+    gh pr list \
+      --repo "$repo" \
+      --head "$head" \
+      --state open \
+      --limit 1 \
+      --json number \
+      --jq '.[0].number // empty' 2>/dev/null || true
+  )"
+
+  if [[ -z "$number" ]]; then
+    number="$(
+      gh pr list \
+        --repo "$repo" \
+        --head "$head" \
+        --state all \
+        --limit 1 \
+        --json number \
+        --jq '.[0].number // empty' 2>/dev/null || true
+    )"
+  fi
+
+  [[ -n "$number" ]] || return 1
+  pr_json_for_selector "$number"
+}
+
+format_line() {
+  local pr_json="$1"
+  local number title url additions deletions display_title
+
+  number="$(jq -r '.number' <<<"$pr_json")"
+  title="$(jq -r '.title' <<<"$pr_json")"
+  url="$(jq -r '.url' <<<"$pr_json")"
+  additions="$(jq -r '.additions // 0' <<<"$pr_json")"
+  deletions="$(jq -r '.deletions // 0' <<<"$pr_json")"
+  display_title="$(normalize_title "$title")"
+
+  printf -- '- [PR#%s](%s) / %s `+%s -%s`\n' \
+    "$number" "$url" "$display_title" "$additions" "$deletions"
+}
+
+fence=true
+repo=""
+selector=""
+default_branch=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --bare | --no-fence)
+      fence=false
+      shift
+      ;;
+    --repo)
+      if [[ $# -lt 2 ]]; then
+        echo "Missing value for --repo" >&2
+        exit 1
+      fi
+      repo="$2"
+      shift 2
+      ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      usage >&2
+      exit 1
+      ;;
+    *)
+      if [[ -n "$selector" ]]; then
+        echo "Only one PR, branch, or URL selector is supported" >&2
+        exit 1
+      fi
+      selector="$1"
+      shift
+      ;;
+  esac
+done
+
+for cmd in gh git jq sed; do
+  require_cmd "$cmd"
+done
+
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
+  echo "Error: not inside a git repository" >&2
+  exit 1
+}
+
+if [[ -z "$repo" ]]; then
+  repo="$(gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null || true)"
+  if [[ -z "$repo" ]]; then
+    repo="$(repo_from_remote)" || {
+      echo "Error: could not infer GitHub repo" >&2
+      exit 1
+    }
+  fi
+fi
+
+default_branch="$(
+  gh repo view "$repo" --json defaultBranchRef --jq '.defaultBranchRef.name' 2>/dev/null || true
+)"
+
+if [[ -z "$selector" ]]; then
+  selector="$(git branch --show-current)"
+  if [[ -z "$selector" ]]; then
+    echo "Error: no selector provided and HEAD is detached" >&2
+    exit 1
+  fi
+fi
+
+current_json="$(pr_json_for_selector "$selector" 2>/dev/null)" || {
+  echo "Error: no PR found for '$selector' in $repo" >&2
+  exit 1
+}
+
+lines=()
+seen_heads=""
+
+while [[ -n "$current_json" ]]; do
+  head="$(jq -r '.headRefName' <<<"$current_json")"
+  base="$(jq -r '.baseRefName' <<<"$current_json")"
+
+  if grep -qxF "$head" <<<"$seen_heads"; then
+    echo "Error: detected a cycle while walking PR bases at '$head'" >&2
+    exit 1
+  fi
+  seen_heads="${seen_heads}${seen_heads:+$'\n'}${head}"
+
+  lines+=("$(format_line "$current_json")")
+
+  if [[ -z "$base" || "$base" == "null" || "$base" == "$default_branch" ]]; then
+    break
+  fi
+
+  current_json="$(pr_json_for_head "$base" 2>/dev/null || true)"
+done
+
+if "$fence"; then
+  echo '```md'
+fi
+
+for ((i = ${#lines[@]} - 1; i >= 0; i--)); do
+  echo "${lines[$i]}"
+done
+
+if "$fence"; then
+  echo '```'
+fi

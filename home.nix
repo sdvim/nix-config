@@ -53,7 +53,6 @@ in
     tmuxPlugins.continuum
     tmuxPlugins.resurrect
     tree-sitter
-    turbo
     vhs
     wget
     zsh-completions
@@ -240,6 +239,11 @@ in
     source = ./scripts/gitloc;
   };
 
+  home.file.".local/bin/pr-stack" = {
+    executable = true;
+    source = ./scripts/pr-stack;
+  };
+
   home.file.".local/bin/tmux-session" = {
     executable = true;
     source = ./scripts/tmux-session;
@@ -309,7 +313,7 @@ in
   home.file.".config/aerospace/aerospace.toml".text = lib.mkDefault (
     renderTemplate ./config/aerospace/aerospace.toml
   );
-  home.file.".config/ghostty/config".text = lib.mkDefault (builtins.readFile ./config/ghostty/config);
+  # home.file.".config/ghostty/config".text = lib.mkDefault (builtins.readFile ./config/ghostty/config);
   home.file.".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${flakeDir}/config/nvim";
 
   home.file.".tmux.conf".text = ''

@@ -1,5 +1,4 @@
-{ userName, ... }:
-{
+_: {
   home.file.".claude/statusline.sh" = {
     executable = true;
     source = ./scripts/claude-statusline.sh;
@@ -16,66 +15,9 @@
     ];
   };
 
-  # Runtime overrides go in ~/.claude/settings.local.json
-  home.file.".claude/settings.json".text = builtins.toJSON {
-    skipDangerousModePermissionPrompt = true;
-    statusLine = {
-      type = "command";
-      command = "/Users/${userName}/.claude/statusline.sh";
-    };
-    hooks = {
-      Stop = [
-        {
-          hooks = [
-            {
-              type = "command";
-              command = "PANE_ID=$(tmux display -p '#{pane_id}' 2>/dev/null); sed -i '' \"/^\${PANE_ID}$/d\" /tmp/tmux-claude-queue 2>/dev/null; tmux refresh-client -S 2>/dev/null; true";
-            }
-          ];
-        }
-      ];
-      PermissionRequest = [
-        {
-          hooks = [
-            {
-              type = "command";
-              command = "tmux set-option -p @claude_waiting 1 2>/dev/null; PANE_ID=$(tmux display -p '#{pane_id}' 2>/dev/null); grep -qxF \"$PANE_ID\" /tmp/tmux-claude-queue 2>/dev/null || echo \"$PANE_ID\" >> /tmp/tmux-claude-queue; tmux refresh-client -S 2>/dev/null; true";
-            }
-          ];
-        }
-      ];
-      PostToolUse = [
-        {
-          hooks = [
-            {
-              type = "command";
-              command = "tmux set-option -p -u @claude_waiting 2>/dev/null; PANE_ID=$(tmux display -p '#{pane_id}' 2>/dev/null); sed -i '' \"/^\${PANE_ID}$/d\" /tmp/tmux-claude-queue 2>/dev/null; tmux refresh-client -S 2>/dev/null; true";
-            }
-          ];
-        }
-      ];
-      Notification = [
-        {
-          hooks = [
-            {
-              type = "command";
-              command = "tmux refresh-client -S 2>/dev/null; true";
-            }
-          ];
-        }
-      ];
-      UserPromptSubmit = [
-        {
-          hooks = [
-            {
-              type = "command";
-              command = "tmux set-option -p -u @claude_waiting 2>/dev/null; PANE_ID=$(tmux display -p '#{pane_id}' 2>/dev/null); sed -i '' \"/^\${PANE_ID}$/d\" /tmp/tmux-claude-queue 2>/dev/null; tmux refresh-client -S 2>/dev/null; true";
-            }
-          ];
-        }
-      ];
-    };
-  };
+  # ~/.claude/settings.json is intentionally not managed by Nix so Claude Code
+  # can mutate it freely (themes, permissions, /config changes, etc.). Sync
+  # across machines is manual for now — copy the file, or use a dotfile tool.
 
   programs.zsh.initContent = ''
     # Clear stale @claude_waiting when back at shell prompt
